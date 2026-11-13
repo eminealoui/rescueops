@@ -1,0 +1,39 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+class Incident {
+  id: UUID
+  type: TypeUrgence
+  description: String
+  localisation: String
+  priorite: Priorite
+  statut: StatutIncident
+  dateSignalement: DateTime
+  +qualifier()
+  +cloturer()
+}
+enum TypeUrgence {
+  MEDICAL
+  ACCIDENT
+  INCENDIE
+  AGRESSION
+  AUTRE
+}
+enum Priorite {
+  CRITIQUE
+  HAUTE
+  MOYENNE
+  BASSE
+}
+enum StatutIncident {
+  SIGNALE
+  QUALIFIE
+  EN_COURS
+  CLOTURE
+}
+Incident --> TypeUrgence
+Incident --> Priorite
+Incident --> StatutIncident
+class "MS3 Dispatch" as X #EEE
+X ..> Incident : incidentId (REST / événement incident.priorise)
+@enduml

@@ -1,0 +1,47 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontSize 12
+rectangle "Angular SPA :4200" as FE
+rectangle "Keycloak :8180\nOIDC / JWT" as KC
+rectangle "API Gateway :8080\nroutage + vérification JWT" as GW
+rectangle "Eureka :8761" as EU
+queue "RabbitMQ\nexchange rescueops.events" as MQ
+FE --> GW : HTTPS + Bearer JWT
+FE ..> KC : login OIDC (PKCE)
+GW ..> KC : JWKS
+GW ..> EU : lb://service
+rectangle "MS1 Emergency :8081" as M1
+rectangle "MS2 Resource :8082" as M2
+rectangle "MS3 Dispatch :8083" as M3
+rectangle "MS4 Intervention :8084" as M4
+rectangle "MS5 Hospital :8085" as M5
+rectangle "MS6 Training :8086" as M6
+database emergency_db as D1
+database resource_db as D2
+database dispatch_db as D3
+database intervention_db as D4
+database hospital_db as D5
+database training_db as D6
+GW --> M1
+GW --> M2
+GW --> M3
+GW --> M4
+GW --> M5
+GW --> M6
+M1 -- D1
+M2 -- D2
+M3 -- D3
+M4 -- D4
+M5 -- D5
+M6 -- D6
+M3 --> M2 : REST (OpenFeign)\nréserver ambulance
+M1 ..> MQ : incident.priorise
+M3 ..> MQ : affectation.confirmee
+M4 ..> MQ : mission.statut / mission.terminee
+M5 ..> MQ : transfert.confirme
+M6 ..> MQ : certification.maj
+MQ ..> M2 : mission.terminee -> libérer
+MQ ..> M3 : incident.priorise
+MQ ..> M4 : affectation.confirmee
+MQ ..> M5 : mission.statut
+@enduml

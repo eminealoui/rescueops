@@ -1,0 +1,47 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: emergency
+          uri: lb://emergency-service
+          predicates:
+            - Path=/api/emergency/**
+        - id: resource
+          uri: lb://resource-service
+          predicates:
+            - Path=/api/resource/**
+        - id: dispatch
+          uri: lb://dispatch-service
+          predicates:
+            - Path=/api/dispatch/**
+        - id: intervention
+          uri: lb://intervention-service
+          predicates:
+            - Path=/api/intervention/**
+        - id: hospital
+          uri: lb://hospital-service
+          predicates:
+            - Path=/api/hospital/**
+        - id: training
+          uri: lb://training-service
+          predicates:
+            - Path=/api/training/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:4200"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWKS:http://localhost:8180/realms/rescueops/protocol/openid-connect/certs}
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}

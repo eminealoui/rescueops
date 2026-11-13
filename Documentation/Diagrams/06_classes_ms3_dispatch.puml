@@ -1,0 +1,22 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+class Recommandation {
+  id: UUID
+  incidentId: UUID
+  ambulanceId: UUID
+  score: double
+}
+class Affectation {
+  id: UUID
+  incidentId: UUID
+  ambulanceId: UUID
+  statut: StatutAffectation
+  +confirmer()
+}
+Recommandation "0..*" -- "0..1" Affectation
+class "MS1 Incident" as I1 #EEE
+class "MS2 Ambulance" as A1 #EEE
+Recommandation ..> I1 : incidentId
+Affectation ..> A1 : ambulanceId (appel REST réservation)
+@enduml

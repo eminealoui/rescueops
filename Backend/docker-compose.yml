@@ -1,0 +1,94 @@
+# Lancement : docker compose up --build
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: rescueops
+      POSTGRES_PASSWORD: rescueops
+    volumes:
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    ports: ["5432:5432"]
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: ["5672:5672", "15672:15672"]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports: ["8180:8080"]
+
+  eureka-server:
+    build: ./eureka-server
+    ports: ["8761:8761"]
+
+  api-gateway:
+    build: ./api-gateway
+    ports: ["8080:8080"]
+    environment:
+      EUREKA_URL: http://eureka-server:8761/eureka
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs
+    depends_on: [eureka-server, keycloak]
+
+  emergency-service:
+    build: ./emergency-service
+    ports: ["8081:8081"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/emergency_db
+      RABBIT_HOST: rabbitmq
+      EUREKA_URL: http://eureka-server:8761/eureka
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs
+    depends_on: [postgres, rabbitmq, eureka-server]
+
+  resource-service:
+    build: ./resource-service
+    ports: ["8082:8082"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/resource_db
+      RABBIT_HOST: rabbitmq
+      EUREKA_URL: http://eureka-server:8761/eureka
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs
+    depends_on: [postgres, rabbitmq, eureka-server]
+
+  dispatch-service:
+    build: ./dispatch-service
+    ports: ["8083:8083"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/dispatch_db
+      RABBIT_HOST: rabbitmq
+      EUREKA_URL: http://eureka-server:8761/eureka
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs
+    depends_on: [postgres, rabbitmq, eureka-server]
+
+  intervention-service:
+    build: ./intervention-service
+    ports: ["8084:8084"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/intervention_db
+      RABBIT_HOST: rabbitmq
+      EUREKA_URL: http://eureka-server:8761/eureka
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs
+    depends_on: [postgres, rabbitmq, eureka-server]
+
+  hospital-service:
+    build: ./hospital-service
+    ports: ["8085:8085"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/hospital_db
+      RABBIT_HOST: rabbitmq
+      EUREKA_URL: http://eureka-server:8761/eureka
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs
+    depends_on: [postgres, rabbitmq, eureka-server]
+
+  training-service:
+    build: ./training-service
+    ports: ["8086:8086"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/training_db
+      RABBIT_HOST: rabbitmq
+      EUREKA_URL: http://eureka-server:8761/eureka
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs
+    depends_on: [postgres, rabbitmq, eureka-server]

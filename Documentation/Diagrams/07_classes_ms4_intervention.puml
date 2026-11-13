@@ -1,0 +1,21 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+class Mission {
+  id: UUID
+  affectationId: UUID
+  statut: StatutMission
+  dateDebut: DateTime
+  dateFin: DateTime
+  +demarrer()
+  +terminer()
+}
+class RapportIntervention {
+  id: UUID
+  bilan: String
+  dateCreation: DateTime
+}
+Mission "1" -- "0..1" RapportIntervention
+class "MS3 Affectation" as A #EEE
+Mission ..> A : affectationId (événement affectation.confirmee)
+@enduml

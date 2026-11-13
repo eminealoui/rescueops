@@ -1,0 +1,28 @@
+server:
+  port: 8084
+spring:
+  application:
+    name: intervention-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/intervention_db}
+    username: ${DB_USER:rescueops}
+    password: ${DB_PASSWORD:rescueops}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWKS:http://localhost:8180/realms/rescueops/protocol/openid-connect/certs}
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

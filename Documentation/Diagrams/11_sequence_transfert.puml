@@ -1,0 +1,18 @@
+@startuml
+skinparam shadowing false
+actor Ambulancier
+actor "Coordinateur hospitalier" as Coo
+participant Gateway
+participant "MS4 Intervention" as MS4
+participant "MS5 Hospital" as MS5
+queue RabbitMQ
+Ambulancier -> Gateway : POST /api/intervention/missions/{id}/transfert
+Gateway -> MS4
+MS4 -> MS5 : POST /api/hospital/transferts {missionId, specialite} (sync)
+MS5 --> MS4 : 201 DEMANDE
+Coo -> Gateway : PATCH /api/hospital/transferts/{id}/accepter
+Gateway -> MS5
+MS5 -> MS5 : réserver une place (placesDisponibles - 1)
+MS5 --> RabbitMQ : transfert.confirme (async)
+RabbitMQ --> MS4 : met à jour la mission
+@enduml
