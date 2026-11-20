@@ -58,7 +58,7 @@ Chaque plan produit un logiciel qui marche et qui se teste seul.
 
 ---
 
-### Tâche 1 : initialisation du dépôt, POM parent et Maven Wrapper
+### Task 1 : initialisation du dépôt, POM parent et Maven Wrapper
 
 **Fichiers :**
 - Créer : `pom.xml`, `.mvn/wrapper/maven-wrapper.properties`, `mvnw`, `mvnw.cmd`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.env.example`, `README.md` (squelette)
@@ -79,7 +79,7 @@ Chaque plan produit un logiciel qui marche et qui se teste seul.
 
 ---
 
-### Tâche 2 : `rescueops-common`, partie sécurité et identité
+### Task 2 : `rescueops-common`, partie sécurité et identité
 
 **Fichiers :**
 - Créer : `rescueops-common/pom.xml` (jar, dépendances : `spring-boot-starter-security`, `spring-boot-starter-oauth2-resource-server`, `spring-boot-starter-webmvc` en `optional`, `spring-boot-starter-amqp` en `optional`, `springdoc-openapi-starter-webmvc-ui` en `optional`, Lombok, et en test `spring-boot-starter-test` et `spring-security-test`)
@@ -129,7 +129,7 @@ Chaque plan produit un logiciel qui marche et qui se teste seul.
 
 ---
 
-### Tâche 3 : `rescueops-common`, partie erreurs, corrélation et événements
+### Task 3 : `rescueops-common`, partie erreurs, corrélation et événements
 
 **Fichiers :**
 - Créer dans `common/error/` : `ApiException.java` (abstraite, avec `HttpStatus status()` et `String code()`), `NotFoundException`, `ConflictException`, `BusinessRuleException` (422), `ForbiddenOperationException` (403), `GlobalExceptionHandler.java`
@@ -176,7 +176,7 @@ Chaque plan produit un logiciel qui marche et qui se teste seul.
 
 ---
 
-### Tâche 4 : infrastructure Docker (MySQL, Keycloak avec realm, RabbitMQ)
+### Task 4 : infrastructure Docker (MySQL, Keycloak avec realm, RabbitMQ)
 
 **Fichiers :**
 - Créer :
@@ -213,7 +213,7 @@ Chaque plan produit un logiciel qui marche et qui se teste seul.
 
 ---
 
-### Tâche 5 : Discovery Server et API Gateway
+### Task 5 : Discovery Server et API Gateway
 
 **Fichiers :**
 - Créer : `infrastructure/discovery-server/` (`pom.xml` avec parent rescueops, `DiscoveryServerApplication`, `application.yml` repris du projet existant `discovery-server` : port `${SERVER_PORT:8761}`, `register-with-eureka:false`, `fetch-registry:false`, auto-préservation désactivée, Actuator health et info), son `Dockerfile` et son test de contexte.
@@ -267,7 +267,7 @@ Chaque plan produit un logiciel qui marche et qui se teste seul.
 
 ---
 
-### Tâche 6 : socle complet en une commande et vérification de bout en bout
+### Task 6 : socle complet en une commande et vérification de bout en bout
 
 **Fichiers :**
 - Modifier : `docker-compose.infra.yml` pour ajouter `discovery-server` et `api-gateway`.
