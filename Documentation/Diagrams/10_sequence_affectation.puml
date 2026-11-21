@@ -1,0 +1,27 @@
+@startuml
+skinparam shadowing false
+actor Opérateur
+participant Gateway
+participant "MS1 Emergency" as MS1
+participant "MS3 Dispatch" as MS3
+participant "MS2 Resource" as MS2
+queue RabbitMQ
+participant "MS4 Intervention" as MS4
+Opérateur -> Gateway : PATCH /api/emergency/incidents/{id}/qualifier
+Gateway -> MS1 : (JWT vérifié)
+MS1 --> RabbitMQ : incident.priorise (async)
+RabbitMQ --> MS3 : incident.priorise
+Opérateur -> Gateway : GET /api/dispatch/recommandations?incidentId=
+Gateway -> MS3
+MS3 -> MS2 : GET /api/resource/ambulances/disponibles (sync, OpenFeign)
+MS2 --> MS3 : liste
+MS3 --> Opérateur : ambulances classées par score
+Opérateur -> Gateway : POST /api/dispatch/affectations/{id}/confirmer
+Gateway -> MS3
+MS3 -> MS2 : POST /api/resource/ambulances/{id}/reserver (sync)
+MS2 --> MS3 : 200 OK / 409 déjà réservée
+MS3 --> RabbitMQ : affectation.confirmee (async)
+RabbitMQ --> MS4 : crée la mission
+MS4 --> RabbitMQ : mission.terminee (async)
+RabbitMQ --> MS2 : libère l'ambulance
+@enduml

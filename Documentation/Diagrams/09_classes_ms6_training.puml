@@ -1,0 +1,34 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+class Formation {
+  id: UUID
+  titre: String
+  prerequis: String
+  scenarioSimulation: String
+  niveauSimulation: int
+  +publier()
+}
+class SessionFormation {
+  id: UUID
+  dateDebut: DateTime
+  capacite: int
+  +inscrire()
+}
+class Evaluation {
+  id: UUID
+  scoreMinimal: int
+  +corriger()
+}
+class Certification {
+  id: UUID
+  titulaireUserId: UUID
+  valideJusquAu: Date
+  +estValide()
+}
+Formation "1" -- "0..*" SessionFormation
+Formation "1" -- "1..*" Evaluation
+Evaluation "1" -- "0..*" Certification
+class "MS2 EquipeSecours" as E #EEE
+E ..> Certification : consulte la validité (REST)
+@enduml

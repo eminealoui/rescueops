@@ -1,0 +1,25 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+class Hopital {
+  id: UUID
+  nom: String
+  adresse: String
+}
+class ServiceHospitalier {
+  id: UUID
+  specialite: String
+  placesDisponibles: int
+  +reserverPlace()
+}
+class DemandeTransfert {
+  id: UUID
+  missionId: UUID
+  statut: StatutTransfert
+  +confirmer()
+}
+Hopital "1" -- "1..*" ServiceHospitalier
+ServiceHospitalier "1" -- "0..*" DemandeTransfert
+class "MS4 Mission" as M #EEE
+DemandeTransfert ..> M : missionId
+@enduml

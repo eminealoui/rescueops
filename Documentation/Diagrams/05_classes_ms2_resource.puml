@@ -1,0 +1,35 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+class Ambulance {
+  id: UUID
+  immatriculation: String
+  statut: Disponibilite
+  position: String
+  +reserver()
+  +liberer()
+}
+class EquipeSecours {
+  id: UUID
+  nom: String
+  chefUserId: UUID
+  statut: StatutEquipe
+}
+class Equipement {
+  id: UUID
+  nom: String
+  etat: EtatEquipement
+}
+class Maintenance {
+  id: UUID
+  datePrevue: DateTime
+  statut: StatutMaintenance
+}
+Ambulance "1" -- "0..1" EquipeSecours
+Ambulance "1" -- "0..*" Equipement
+Ambulance "1" -- "0..*" Maintenance
+class "MS3 Dispatch" as X #EEE
+class "MS6 Training" as Y #EEE
+X ..> Ambulance : ambulanceId (POST /reserve)
+EquipeSecours ..> Y : API habilitation (chefUserId)
+@enduml

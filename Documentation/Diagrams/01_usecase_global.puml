@@ -1,0 +1,75 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+left to right direction
+actor Citoyen
+actor "Opérateur de régulation" as Op
+actor "Gestionnaire des ressources" as Ges
+actor Ambulancier as Amb
+actor "Coordinateur hospitalier" as Coo
+actor Formateur as For
+actor Apprenant as App
+actor Administrateur as Adm
+rectangle RescueOps {
+  usecase "S'authentifier" as Auth
+  rectangle "MS1 Urgences" {
+    usecase "Déclarer un incident" as U1
+    usecase "Suivre le statut d'un incident" as U2
+    usecase "Qualifier et prioriser un incident" as U3
+    usecase "Fusionner les doublons" as U4
+  }
+  rectangle "MS2 Ressources" {
+    usecase "Gérer ambulances, équipes, équipements" as R1
+    usecase "Planifier une maintenance" as R2
+    usecase "Consulter les disponibilités" as R3
+  }
+  rectangle "MS3 Dispatching" {
+    usecase "Consulter les recommandations" as D1
+    usecase "Valider une affectation" as D2
+  }
+  rectangle "MS4 Interventions" {
+    usecase "Mettre à jour le statut de mission" as I1
+    usecase "Demander un transfert" as I2
+    usecase "Rédiger le rapport et clôturer la mission" as I3
+  }
+  rectangle "MS5 Hôpitaux" {
+    usecase "Gérer hôpitaux, services, capacités" as H1
+    usecase "Traiter une demande de transfert" as H2
+  }
+  rectangle "MS6 Formations" {
+    usecase "Gérer formations et sessions" as F1
+    usecase "Délivrer une certification" as F2
+    usecase "S'inscrire à une session" as F3
+    usecase "Passer une évaluation / simulation" as F4
+  }
+  rectangle Administration {
+    usecase "Gérer utilisateurs et rôles" as A1
+    usecase "Consulter le journal d'audit" as A2
+  }
+}
+Citoyen --> U1
+Citoyen --> U2
+Op --> U3
+Op --> U4
+Op --> D1
+Op --> D2
+Ges --> R1
+Ges --> R2
+Ges --> R3
+Amb --> I1
+Amb --> I2
+Amb --> I3
+Coo --> H1
+Coo --> H2
+For --> F1
+For --> F2
+App --> F3
+App --> F4
+Adm --> A1
+Adm --> A2
+D2 ..> D1 : <<include>>
+U4 ..> U3 : <<extend>>
+note right of Auth : Tous les cas d'utilisation\n<<include>> S'authentifier
+@enduml

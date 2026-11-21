@@ -1,0 +1,141 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+package "MS1 - Urgences" #FFF0F0 {
+  class Incident {
+    id: UUID
+    type: TypeUrgence
+    description: String
+    localisation: String
+    priorite: Priorite
+    statut: StatutIncident
+    dateSignalement: DateTime
+    +qualifier()
+    +cloturer()
+  }
+}
+package "MS2 - Ressources" #F0FFF5 {
+  class Ambulance {
+    id: UUID
+    immatriculation: String
+    statut: Disponibilite
+    position: String
+    +reserver()
+    +liberer()
+  }
+  class EquipeSecours {
+    id: UUID
+    nom: String
+    chefUserId: UUID
+    statut: StatutEquipe
+  }
+  class Equipement {
+    id: UUID
+    nom: String
+    etat: EtatEquipement
+  }
+  class Maintenance {
+    id: UUID
+    datePrevue: DateTime
+    statut: StatutMaintenance
+  }
+  Ambulance "1" -- "0..1" EquipeSecours
+  Ambulance "1" -- "0..*" Equipement
+  Ambulance "1" -- "0..*" Maintenance
+}
+package "MS3 - Dispatching" #F3F0FF {
+  class Recommandation {
+    id: UUID
+    incidentId: UUID
+    ambulanceId: UUID
+    score: double
+  }
+  class Affectation {
+    id: UUID
+    incidentId: UUID
+    ambulanceId: UUID
+    statut: StatutAffectation
+    +confirmer()
+  }
+  Recommandation "0..*" -- "0..1" Affectation
+}
+package "MS4 - Interventions" #F0F6FF {
+  class Mission {
+    id: UUID
+    affectationId: UUID
+    statut: StatutMission
+    dateDebut: DateTime
+    dateFin: DateTime
+    +demarrer()
+    +terminer()
+  }
+  class RapportIntervention {
+    id: UUID
+    bilan: String
+    dateCreation: DateTime
+  }
+  Mission "1" -- "0..1" RapportIntervention
+}
+package "MS5 - Hopitaux" #F0FFFF {
+  class Hopital {
+    id: UUID
+    nom: String
+    adresse: String
+  }
+  class ServiceHospitalier {
+    id: UUID
+    specialite: String
+    placesDisponibles: int
+    +reserverPlace()
+  }
+  class DemandeTransfert {
+    id: UUID
+    missionId: UUID
+    statut: StatutTransfert
+    +confirmer()
+  }
+  Hopital "1" -- "1..*" ServiceHospitalier
+  ServiceHospitalier "1" -- "0..*" DemandeTransfert
+}
+package "MS6 - Formations" #FFFAF0 {
+  class Formation {
+    id: UUID
+    titre: String
+    prerequis: String
+    scenarioSimulation: String
+    niveauSimulation: int
+    +publier()
+  }
+  class SessionFormation {
+    id: UUID
+    dateDebut: DateTime
+    capacite: int
+    +inscrire()
+  }
+  class Evaluation {
+    id: UUID
+    scoreMinimal: int
+    +corriger()
+  }
+  class Certification {
+    id: UUID
+    titulaireUserId: UUID
+    valideJusquAu: Date
+    +estValide()
+  }
+  Formation "1" -- "0..*" SessionFormation
+  Formation "1" -- "1..*" Evaluation
+  Evaluation "1" -- "0..*" Certification
+}
+Recommandation ..> Incident : incidentId
+Affectation ..> Ambulance : ambulanceId
+Mission ..> Affectation : affectationId
+DemandeTransfert ..> Mission : missionId
+EquipeSecours ..> Certification : API (habilitation)
+legend right
+ Trait plein : association dans un même service
+ Pointillé : référence par identifiant (pas de clé étrangère)
+endlegend
+@enduml
