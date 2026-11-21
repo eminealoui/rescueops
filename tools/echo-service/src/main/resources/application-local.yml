@@ -1,0 +1,16 @@
+# =====================================================================
+#  Profil "local" : RECETTE DE RÉFÉRENCE pour tout microservice lancé depuis IntelliJ
+#  pendant que le socle tourne dans Docker (docker-compose.infra.yml).
+# =====================================================================
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    # La Gateway tourne dans Docker : elle joint la machine via host.docker.internal.
+    hostname: host.docker.internal
+    prefer-ip-address: false
+
+rescueops:
+  security:
+    jwk-set-uri: http://localhost:8180/realms/rescueops/protocol/openid-connect/certs

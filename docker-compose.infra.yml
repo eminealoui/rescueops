@@ -87,6 +87,33 @@ services:
     restart: "no"
     networks: [rescueops-net]
 
+  discovery-server:
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: infrastructure/discovery-server, PORT: "8761" }
+    image: rescueops/discovery-server:dev
+    environment:
+      EUREKA_HOSTNAME: discovery-server
+    ports: ["8761:8761"]
+    networks: [rescueops-net]
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: infrastructure/api-gateway, PORT: "8080" }
+    image: rescueops/api-gateway:dev
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports: ["8080:8080"]
+    # Permet d'atteindre un microservice lancé depuis IntelliJ sur la machine (profil "local").
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    depends_on:
+      discovery-server: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+    networks: [rescueops-net]
+
 volumes:
   mysql-data:
   keycloak-data:
