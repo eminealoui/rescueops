@@ -1,0 +1,137 @@
+# =====================================================================
+#  API Gateway RescueOps - port 8080
+#  Les 7 routes métier sont déclarées dès le départ : un membre de l équipe
+#  n a JAMAIS à modifier la Gateway pour brancher son microservice.
+#  Le préfixe /api/... est conservé : le contrôleur du service le reçoit tel quel.
+# =====================================================================
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 3000
+            response-timeout: 10s
+          routes:
+            - id: ms-user
+              uri: lb://ms-user
+              predicates:
+                - Path=/api/users/**
+            - id: ms-hospital
+              uri: lb://ms-hospital
+              predicates:
+                - Path=/api/hospitals/**,/api/transfers/**
+            - id: ms-emergency
+              uri: lb://ms-emergency
+              predicates:
+                - Path=/api/emergencies/**
+            - id: ms-resource
+              uri: lb://ms-resource
+              predicates:
+                - Path=/api/resources/**
+            - id: ms-dispatch
+              uri: lb://ms-dispatch
+              predicates:
+                - Path=/api/dispatch/**
+            - id: ms-intervention
+              uri: lb://ms-intervention
+              predicates:
+                - Path=/api/interventions/**
+            - id: ms-training
+              uri: lb://ms-training
+              predicates:
+                - Path=/api/trainings/**
+            # Documentation OpenAPI de chaque service, agrégée dans un seul Swagger UI (public)
+            - id: docs-ms-user
+              uri: lb://ms-user
+              predicates:
+                - Path=/docs/ms-user/**
+              filters:
+                - RewritePath=/docs/ms-user/(?<path>.*), /$\{path}
+            - id: docs-ms-hospital
+              uri: lb://ms-hospital
+              predicates:
+                - Path=/docs/ms-hospital/**
+              filters:
+                - RewritePath=/docs/ms-hospital/(?<path>.*), /$\{path}
+            - id: docs-ms-emergency
+              uri: lb://ms-emergency
+              predicates:
+                - Path=/docs/ms-emergency/**
+              filters:
+                - RewritePath=/docs/ms-emergency/(?<path>.*), /$\{path}
+            - id: docs-ms-resource
+              uri: lb://ms-resource
+              predicates:
+                - Path=/docs/ms-resource/**
+              filters:
+                - RewritePath=/docs/ms-resource/(?<path>.*), /$\{path}
+            - id: docs-ms-dispatch
+              uri: lb://ms-dispatch
+              predicates:
+                - Path=/docs/ms-dispatch/**
+              filters:
+                - RewritePath=/docs/ms-dispatch/(?<path>.*), /$\{path}
+            - id: docs-ms-intervention
+              uri: lb://ms-intervention
+              predicates:
+                - Path=/docs/ms-intervention/**
+              filters:
+                - RewritePath=/docs/ms-intervention/(?<path>.*), /$\{path}
+            - id: docs-ms-training
+              uri: lb://ms-training
+              predicates:
+                - Path=/docs/ms-training/**
+              filters:
+                - RewritePath=/docs/ms-training/(?<path>.*), /$\{path}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+rescueops:
+  security:
+    # Émetteur : toujours l URL publique de Keycloak (KC_HOSTNAME), même dans Docker.
+    issuer: http://localhost:8180/realms/rescueops
+    jwk-set-uri: ${KEYCLOAK_JWKS:http://localhost:8180/realms/rescueops/protocol/openid-connect/certs}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: ms-user
+        url: /docs/ms-user/v3/api-docs
+      - name: ms-hospital
+        url: /docs/ms-hospital/v3/api-docs
+      - name: ms-emergency
+        url: /docs/ms-emergency/v3/api-docs
+      - name: ms-resource
+        url: /docs/ms-resource/v3/api-docs
+      - name: ms-dispatch
+        url: /docs/ms-dispatch/v3/api-docs
+      - name: ms-intervention
+        url: /docs/ms-intervention/v3/api-docs
+      - name: ms-training
+        url: /docs/ms-training/v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+

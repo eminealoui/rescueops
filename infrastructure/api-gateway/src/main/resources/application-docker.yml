@@ -1,0 +1,9 @@
+# Profil "docker" : la Gateway tourne dans Docker Compose.
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+
+rescueops:
+  security:
+    jwk-set-uri: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs

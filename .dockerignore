@@ -1,0 +1,11 @@
+# Contexte Docker = racine du dépôt : on n'envoie que le code Java nécessaire au build.
+**/target/
+**/node_modules/
+frontend/
+docs/
+.git/
+.superpowers/
+.idea/
+*.iml
+.env
+*.log
