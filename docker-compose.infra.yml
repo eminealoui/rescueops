@@ -119,6 +119,22 @@ services:
       keycloak: { condition: service_healthy }
     networks: [rescueops-net]
 
+  # Service partagé : profils utilisateurs. Pas de port publié : on y accède par la Gateway (/api/users/**).
+  ms-user:
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: services/ms-user, PORT: "8087" }
+    image: rescueops/ms-user:dev
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_PASSWORD: ${USER_DB_PASSWORD}
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+    networks: [rescueops-net]
+
 volumes:
   mysql-data:
   keycloak-data:

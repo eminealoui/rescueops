@@ -15,7 +15,7 @@
 | 4. Gestion des interventions | `ms-intervention` | 8084 | **[services/ms-intervention/README.md](../services/ms-intervention/README.md)** |
 | 5. Coordination hospitalière | `ms-hospital` | 8085 | porteur du socle |
 | 6. Formations et certifications | `ms-training` | 8086 | **[services/ms-training/README.md](../services/ms-training/README.md)** |
-| Transversal. Utilisateurs | `ms-user` | 8087 | porteur du socle |
+| Transversal. Utilisateurs | `ms-user` | 8087 | **[services/ms-user/README.md](../services/ms-user/README.md)** (déjà inclus dans le socle) |
 
 ## Comment le projet est construit (en 30 secondes)
 

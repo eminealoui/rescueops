@@ -99,7 +99,7 @@ docker compose -f docker-compose.infra.yml up -d --build
 docker compose -f docker-compose.infra.yml ps
 ```
 
-✅ **Tu dois voir :** 5 lignes (`mysql`, `keycloak`, `rabbitmq`, `discovery-server`, `api-gateway`), toutes en **`(healthy)`**. Keycloak peut mettre une minute.
+✅ **Tu dois voir :** 6 lignes (`mysql`, `keycloak`, `rabbitmq`, `discovery-server`, `api-gateway`, `ms-user`), toutes en **`(healthy)`**. Keycloak peut mettre une minute.
 
 > 💡 Les jours suivants : `docker compose -f docker-compose.infra.yml up -d` (sans `--build`).
 > Pour éteindre : `docker compose -f docker-compose.infra.yml down`. **Jamais `-v`**, qui efface toutes les données.

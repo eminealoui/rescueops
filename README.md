@@ -49,7 +49,8 @@ Cette commande démarre :
 - MySQL (avec ses 7 bases) ;
 - Keycloak, avec le realm `rescueops` importé automatiquement ;
 - RabbitMQ ;
-- Eureka et l'API Gateway.
+- Eureka et l'API Gateway ;
+- **ms-user**, le service partagé des profils utilisateurs.
 
 ## Développer son microservice (IntelliJ)
 
