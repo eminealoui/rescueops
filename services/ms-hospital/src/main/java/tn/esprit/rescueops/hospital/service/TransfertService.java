@@ -67,17 +67,25 @@ public class TransfertService {
         return toResponse(d, false);
     }
 
-    /** DEMANDEE → PLACE_RETENUE. La place est prise atomiquement ; s'il n'y en a plus, tout est annulé (409). */
+    /**
+     * DEMANDEE → PLACE_RETENUE. La place est prise atomiquement ; s'il n'y en a plus, tout est annulé (409).
+     * ORDRE IMPORTANT : d'abord la place (verrou exclusif sur le service), ensuite la demande. Dans l'ordre inverse,
+     * la clé étrangère demande→service pose un verrou partagé sur le service et 50 réservations simultanées
+     * s'interbloquent (constaté en test d'intégration MySQL).
+     */
     @Transactional
     public TransfertResponse reserver(UUID id, UUID serviceId, CurrentUser user) {
         DemandeTransfert d = charger(id);
-        Instant maintenant = Instant.now();
-        if (demandes.retenirPlace(id, serviceId, maintenant.plus(props.reservationTtl()), user.keycloakId(), maintenant) == 0) {
+        if (d.getStatut() != StatutTransfert.DEMANDEE) {
             throw transitionInterdite(d.getStatut(), "réserver");
         }
         if (services.reserverPlace(serviceId) == 0) {
-            // Exception → rollback : la demande redevient DEMANDEE, aucune place n'est prise.
             throw new ConflictException("CAPACITE_EPUISEE", "Plus aucune place disponible dans ce service.");
+        }
+        Instant maintenant = Instant.now();
+        if (demandes.retenirPlace(id, serviceId, maintenant.plus(props.reservationTtl()), user.keycloakId(), maintenant) == 0) {
+            // Une autre action a traité la demande entre-temps : exception → rollback, la place est rendue.
+            throw transitionInterdite(charger(id).getStatut(), "réserver");
         }
         tracer(id, StatutTransfert.DEMANDEE, StatutTransfert.PLACE_RETENUE, user.keycloakId(), null);
         events.publishEvent(new TransfertStatutChange(id, d.getMissionId(), serviceId, StatutTransfert.PLACE_RETENUE));
@@ -161,9 +169,9 @@ public class TransfertService {
         if (demandes.changerStatut(id, attendu, nouveau, acteur, motif) == 0) {
             throw transitionInterdite(avant.getStatut(), verbe(nouveau));
         }
-        DemandeTransfert apres = charger(id);
-        apresTransition(apres, attendu, nouveau, acteur, motif, rendreLaPlace);
-        return toResponse(apres, false);
+        apresTransition(charger(id), attendu, nouveau, acteur, motif, rendreLaPlace);
+        // Relecture : rendrePlace vide le contexte JPA, l'entité précédente est détachée.
+        return toResponse(charger(id), false);
     }
 
     private void apresTransition(DemandeTransfert d, StatutTransfert ancien, StatutTransfert nouveau, String acteur,
