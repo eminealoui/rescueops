@@ -33,6 +33,7 @@
         <module>services/ms-intervention</module>
         <module>services/ms-training</module>
         <module>services/ms-user</module>
+        <module>services/ms-hospital</module>
     </modules>
 
     <properties>

@@ -1,0 +1,60 @@
+# =====================================================================
+#  ms-hospital - Module 5 : Coordination hospitalière
+#  Port, nom Eureka et base sont FIXÉS par le contrat d'équipe : ne pas les changer.
+# =====================================================================
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: ms-hospital
+  config:
+    import: classpath:rescueops-logging.properties
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3307/hospital_db}
+    username: ${DB_USER:hospital_svc}
+    password: ${DB_PASSWORD:dev_hospital}
+  jpa:
+    # Le schéma est créé par Flyway (src/main/resources/db/migration), jamais par Hibernate.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    # Instants stockés en UTC, que le service tourne sur le PC (UTC+1) ou dans Docker (UTC).
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER:rescueops}
+    password: ${RABBITMQ_PASSWORD:dev_rabbitmq}
+    listener:
+      simple:
+        # 3 tentatives, puis le message part dans la file des échecs (DLQ) au lieu de boucler.
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1s
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+rescueops:
+  hospital:
+    reservation-ttl: 15m          # durée d'une place retenue avant expiration automatique
+    expiry-check-interval: 30s    # fréquence de la tâche d'expiration
+    max-radius-km: 50             # rayon de recherche des établissements compatibles

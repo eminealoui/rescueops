@@ -1,0 +1,17 @@
+# Profil "docker" : ms-hospital tourne lui aussi dans Docker Compose (démo complète).
+spring:
+  datasource:
+    url: jdbc:mysql://mysql:3306/hospital_db
+  rabbitmq:
+    host: rabbitmq
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+rescueops:
+  security:
+    jwk-set-uri: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs

@@ -1,0 +1,4 @@
+# Profil "demo" : ajoute les données fictives (8 hôpitaux du Grand Tunis). À combiner : local,demo
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/demo
