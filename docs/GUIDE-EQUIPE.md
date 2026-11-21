@@ -13,7 +13,7 @@
 | 2. Gestion des ressources | `ms-resource` | 8082 | **[services/ms-resource/README.md](../services/ms-resource/README.md)** |
 | 3. Dispatching intelligent | `ms-dispatch` | 8083 | **[services/ms-dispatch/README.md](../services/ms-dispatch/README.md)** |
 | 4. Gestion des interventions | `ms-intervention` | 8084 | **[services/ms-intervention/README.md](../services/ms-intervention/README.md)** |
-| 5. Coordination hospitalière | `ms-hospital` | 8085 | porteur du socle |
+| 5. Coordination hospitalière | `ms-hospital` | 8085 | **[services/ms-hospital/README.md](../services/ms-hospital/README.md)** (service de référence) |
 | 6. Formations et certifications | `ms-training` | 8086 | **[services/ms-training/README.md](../services/ms-training/README.md)** |
 | Transversal. Utilisateurs | `ms-user` | 8087 | **[services/ms-user/README.md](../services/ms-user/README.md)** (déjà inclus dans le socle) |
 
