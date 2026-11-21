@@ -48,11 +48,11 @@
       },
       {
         "name": "APPRENANT",
-        "description": "S inscrire aux sessions et suivre les évaluations"
+        "description": "S'inscrire aux sessions et suivre les évaluations"
       },
       {
         "name": "ADMIN",
-        "description": "Administrer les utilisateurs et consulter les journaux d audit"
+        "description": "Administrer les utilisateurs et consulter les journaux d'audit"
       },
       {
         "name": "offline_access",
