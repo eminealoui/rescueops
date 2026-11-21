@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tn.esprit.rescueops.hospital.WebSliceTest;
+import tn.esprit.rescueops.hospital.event.HospitalEventPublisher;
+import tn.esprit.rescueops.hospital.event.MissionTermineeListener;
 import tn.esprit.rescueops.hospital.service.CompatibiliteService;
 import tn.esprit.rescueops.hospital.service.EtablissementService;
 import tn.esprit.rescueops.hospital.service.ExpirationJob;
@@ -35,4 +37,10 @@ abstract class ApiTestBase {
 
     @MockitoBean
     protected ExpirationJob expirationJob;
+
+    @MockitoBean
+    protected HospitalEventPublisher eventPublisher;
+
+    @MockitoBean
+    protected MissionTermineeListener missionTermineeListener;
 }
