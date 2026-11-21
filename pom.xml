@@ -24,7 +24,7 @@
     <description>Plateforme de coordination des urgences - POM parent</description>
 
     <modules>
-        <!-- Les modules sont ajoutés au fur et à mesure de leur création. -->
+        <module>rescueops-common</module>
     </modules>
 
     <properties>
