@@ -1,1 +1,4 @@
 tn.esprit.rescueops.common.security.RescueOpsSecurityAutoConfiguration
+tn.esprit.rescueops.common.web.RescueOpsWebAutoConfiguration
+tn.esprit.rescueops.common.event.RescueOpsAmqpAutoConfiguration
+tn.esprit.rescueops.common.openapi.OpenApiAutoConfiguration

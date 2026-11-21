@@ -18,7 +18,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(classes = RescueOpsSecurityAutoConfigurationTest.TestApp.class)
+// Pas de broker RabbitMQ en test unitaire : son indicateur de santé ferait passer /actuator/health à 503.
+@SpringBootTest(classes = RescueOpsSecurityAutoConfigurationTest.TestApp.class,
+        properties = "management.health.rabbit.enabled=false")
 @AutoConfigureMockMvc
 class RescueOpsSecurityAutoConfigurationTest {
 
