@@ -1,0 +1,97 @@
+# =====================================================================
+#  RescueOps - SOCLE PARTAGÉ (utilisé par les 6 membres de l'équipe)
+#
+#    cp .env.example .env            (une seule fois)
+#    docker compose -f docker-compose.infra.yml up -d
+#
+#  Chaque membre lance ensuite SON microservice depuis IntelliJ (profil "local").
+# =====================================================================
+name: rescueops
+
+services:
+
+  mysql:
+    image: mysql:8.4.13
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      HOSPITAL_DB_PASSWORD: ${HOSPITAL_DB_PASSWORD}
+      EMERGENCY_DB_PASSWORD: ${EMERGENCY_DB_PASSWORD}
+      RESOURCE_DB_PASSWORD: ${RESOURCE_DB_PASSWORD}
+      DISPATCH_DB_PASSWORD: ${DISPATCH_DB_PASSWORD}
+      INTERVENTION_DB_PASSWORD: ${INTERVENTION_DB_PASSWORD}
+      TRAINING_DB_PASSWORD: ${TRAINING_DB_PASSWORD}
+      TZ: UTC
+    # 3307 côté machine : le port 3306 est souvent déjà pris par un MySQL installé sous Windows.
+    ports: ["${MYSQL_HOST_PORT:-3307}:3306"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./infrastructure/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks: [rescueops-net]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # Émetteur des tokens TOUJOURS http://localhost:8180, même vu depuis un conteneur.
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports: ["8180:8080"]
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      # Import au premier démarrage uniquement (un realm existant n'est pas écrasé).
+      - ./infrastructure/keycloak/realm-rescueops.json:/opt/keycloak/data/import/realm-rescueops.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [rescueops-net]
+
+  rabbitmq:
+    image: rabbitmq:4.3.8-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports: ["5672:5672", "15672:15672"]
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    networks: [rescueops-net]
+
+  rabbitmq-init:
+    image: curlimages/curl:8.17.0
+    entrypoint: ["sh", "/init-exchanges.sh"]
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    volumes:
+      - ./infrastructure/rabbitmq/init-exchanges.sh:/init-exchanges.sh:ro
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+    restart: "no"
+    networks: [rescueops-net]
+
+volumes:
+  mysql-data:
+  keycloak-data:
+  rabbitmq-data:
+
+networks:
+  rescueops-net:
+    name: rescueops-net

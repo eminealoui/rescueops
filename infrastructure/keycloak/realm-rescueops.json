@@ -1,0 +1,288 @@
+{
+  "realm": "rescueops",
+  "displayName": "RescueOps",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "bruteForceProtected": true,
+  "passwordPolicy": "length(8) and digits(1) and upperCase(1) and specialChars(1) and notUsername",
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 3600,
+  "ssoSessionMaxLifespan": 36000,
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "fr",
+    "en"
+  ],
+  "defaultLocale": "fr",
+  "roles": {
+    "realm": [
+      {
+        "name": "CITOYEN",
+        "description": "Déclarer un incident et suivre ses informations"
+      },
+      {
+        "name": "OPERATEUR",
+        "description": "Qualifier et prioriser les incidents, valider les affectations"
+      },
+      {
+        "name": "GESTIONNAIRE_RESSOURCES",
+        "description": "Gérer ambulances, équipes, équipements et maintenances"
+      },
+      {
+        "name": "AMBULANCIER",
+        "description": "Suivre les missions, mettre à jour leur état, rédiger les rapports"
+      },
+      {
+        "name": "COORDINATEUR_HOSPITALIER",
+        "description": "Gérer les capacités hospitalières et traiter les transferts"
+      },
+      {
+        "name": "FORMATEUR",
+        "description": "Gérer formations, sessions, évaluations et certifications"
+      },
+      {
+        "name": "APPRENANT",
+        "description": "S inscrire aux sessions et suivre les évaluations"
+      },
+      {
+        "name": "ADMIN",
+        "description": "Administrer les utilisateurs et consulter les journaux d audit"
+      },
+      {
+        "name": "offline_access",
+        "description": "${role_offline-access}"
+      },
+      {
+        "name": "uma_authorization",
+        "description": "${role_uma_authorization}"
+      },
+      {
+        "name": "default-roles-rescueops",
+        "description": "${role_default-roles}",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "CITOYEN",
+            "offline_access",
+            "uma_authorization"
+          ],
+          "client": {
+            "account": [
+              "view-profile",
+              "manage-account"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-rescueops",
+    "composite": true,
+    "composites": {
+      "realm": [
+        "CITOYEN",
+        "offline_access",
+        "uma_authorization"
+      ]
+    }
+  },
+  "clients": [
+    {
+      "clientId": "rescueops-web",
+      "name": "RescueOps - application Angular",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:4200",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:4200/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      }
+    },
+    {
+      "clientId": "rescueops-dev-cli",
+      "name": "DEV UNIQUEMENT - tests, scripts et Postman (grant password)",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ],
+  "users": [
+    {
+      "username": "citoyen@rescueops.test",
+      "email": "citoyen@rescueops.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Sami",
+      "lastName": "Trabelsi",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-rescueops",
+        "CITOYEN"
+      ]
+    },
+    {
+      "username": "operateur@rescueops.test",
+      "email": "operateur@rescueops.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Ines",
+      "lastName": "Gharbi",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-rescueops",
+        "OPERATEUR"
+      ]
+    },
+    {
+      "username": "gestionnaire@rescueops.test",
+      "email": "gestionnaire@rescueops.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Karim",
+      "lastName": "Jaziri",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-rescueops",
+        "GESTIONNAIRE_RESSOURCES"
+      ]
+    },
+    {
+      "username": "ambulancier@rescueops.test",
+      "email": "ambulancier@rescueops.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Walid",
+      "lastName": "Haddad",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-rescueops",
+        "AMBULANCIER"
+      ]
+    },
+    {
+      "username": "coordinateur@rescueops.test",
+      "email": "coordinateur@rescueops.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Meriem",
+      "lastName": "Ben Salah",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-rescueops",
+        "COORDINATEUR_HOSPITALIER"
+      ]
+    },
+    {
+      "username": "formateur@rescueops.test",
+      "email": "formateur@rescueops.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Nadia",
+      "lastName": "Mansour",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-rescueops",
+        "FORMATEUR"
+      ]
+    },
+    {
+      "username": "apprenant@rescueops.test",
+      "email": "apprenant@rescueops.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Youssef",
+      "lastName": "Chaabane",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-rescueops",
+        "APPRENANT"
+      ]
+    },
+    {
+      "username": "admin@rescueops.test",
+      "email": "admin@rescueops.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Leila",
+      "lastName": "Bouzid",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-rescueops",
+        "ADMIN"
+      ]
+    }
+  ]
+}
