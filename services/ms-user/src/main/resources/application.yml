@@ -1,0 +1,38 @@
+# =====================================================================
+#  ms-user - MS7 Utilisateurs (profils métier)
+#  Port, nom Eureka et base sont FIXÉS par le contrat d'équipe : ne pas les changer.
+# =====================================================================
+server:
+  port: ${SERVER_PORT:8087}
+
+spring:
+  application:
+    name: ms-user
+  config:
+    import: classpath:rescueops-logging.properties
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3307/user_db}
+    username: ${DB_USER:user_svc}
+    password: ${DB_PASSWORD:dev_user}
+  jpa:
+    # Le schéma est créé par Flyway (src/main/resources/db/migration), jamais par Hibernate.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

@@ -32,6 +32,7 @@
         <module>services/ms-dispatch</module>
         <module>services/ms-intervention</module>
         <module>services/ms-training</module>
+        <module>services/ms-user</module>
     </modules>
 
     <properties>
