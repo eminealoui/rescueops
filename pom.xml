@@ -27,6 +27,11 @@
         <module>rescueops-common</module>
         <module>infrastructure/discovery-server</module>
         <module>infrastructure/api-gateway</module>
+        <module>services/ms-emergency</module>
+        <module>services/ms-resource</module>
+        <module>services/ms-dispatch</module>
+        <module>services/ms-intervention</module>
+        <module>services/ms-training</module>
     </modules>
 
     <properties>

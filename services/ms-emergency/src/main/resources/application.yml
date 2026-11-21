@@ -1,0 +1,43 @@
+# =====================================================================
+#  ms-emergency - Module 1 : Gestion des urgences
+#  Port, nom Eureka et base sont FIXÉS par le contrat d'équipe : ne pas les changer.
+# =====================================================================
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: ms-emergency
+  config:
+    import: classpath:rescueops-logging.properties
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3307/emergency_db}
+    username: ${DB_USER:emergency_svc}
+    password: ${DB_PASSWORD:dev_emergency}
+  jpa:
+    # Le schéma est créé par Flyway (src/main/resources/db/migration), jamais par Hibernate.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER:rescueops}
+    password: ${RABBITMQ_PASSWORD:dev_rabbitmq}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

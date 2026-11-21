@@ -1,5 +1,7 @@
 # RescueOps - Coordination intelligente des urgences
 
+> 👋 **Membre de l'équipe ? Commence par le [guide de l'équipe](docs/GUIDE-EQUIPE.md)** : il te mène à ton guide personnel, étape par étape.
+
 Projet AWD (Architecture Web Distribuée), réalisé par une équipe de 6 :
 - **7 microservices Spring Boot** ;
 - une **API Gateway**, **Eureka**, **Keycloak**, **MySQL** et **RabbitMQ** ;

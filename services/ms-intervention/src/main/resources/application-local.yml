@@ -1,0 +1,13 @@
+# =====================================================================
+#  Profil "local" : ms-intervention lancé depuis IntelliJ, le socle tourne dans Docker
+#  (docker compose -f docker-compose.infra.yml up -d).
+# =====================================================================
+eureka:
+  instance:
+    # La Gateway tourne dans Docker : elle joint ton PC par host.docker.internal.
+    hostname: host.docker.internal
+    prefer-ip-address: false
+
+rescueops:
+  security:
+    jwk-set-uri: http://localhost:8180/realms/rescueops/protocol/openid-connect/certs

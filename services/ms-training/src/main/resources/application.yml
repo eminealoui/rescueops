@@ -1,0 +1,43 @@
+# =====================================================================
+#  ms-training - Module 6 : Formations, certifications et simulations
+#  Port, nom Eureka et base sont FIXÉS par le contrat d'équipe : ne pas les changer.
+# =====================================================================
+server:
+  port: ${SERVER_PORT:8086}
+
+spring:
+  application:
+    name: ms-training
+  config:
+    import: classpath:rescueops-logging.properties
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3307/training_db}
+    username: ${DB_USER:training_svc}
+    password: ${DB_PASSWORD:dev_training}
+  jpa:
+    # Le schéma est créé par Flyway (src/main/resources/db/migration), jamais par Hibernate.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER:rescueops}
+    password: ${RABBITMQ_PASSWORD:dev_rabbitmq}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

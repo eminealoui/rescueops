@@ -1,0 +1,144 @@
+/* =====================================================================
+   RescueOps - Design tokens (source unique des couleurs, polices, rayons, ombres)
+   Validé avec la maquette docs/design/maquette-v3.html (marque : BLEU PÉTROLE).
+
+   RÈGLES :
+   - Ne JAMAIS écrire une couleur en dur dans un composant : toujours var(--...).
+   - La couleur de MARQUE (--brand*) sert aux actions et à l'identité.
+   - Les couleurs de STATUT (--ok, --warn, --danger) servent UNIQUEMENT aux statuts.
+   - Mode sombre : ajouter data-theme="dark" sur <html>.
+   ===================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,600&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700&display=swap");
+
+:root,
+[data-theme="light"] {
+  /* Fonds et surfaces */
+  --bg: #f2f0eb;            /* fond crème de la page */
+  --surface: #ffffff;       /* cartes, panneaux */
+  --surface-2: #f7f6f2;     /* en-têtes de tableau, survols */
+  --line: #e4e1d8;          /* bordures */
+  --line-2: #d3cfc4;        /* bordures appuyées */
+
+  /* Texte */
+  --text: #111418;
+  --text-2: #4a5250;        /* texte secondaire */
+  --text-3: #8a9490;        /* libellés, aides */
+
+  /* Marque : bleu pétrole */
+  --brand-deep: #0b2f40;    /* bandeau, héro, bouton principal */
+  --brand: #17698a;         /* liens, éléments actifs, petits titres */
+  --brand-soft: #e1edf2;    /* fond d'un élément sélectionné */
+  --brand-on: #8fd3ec;      /* accent sur fond foncé */
+
+  /* Statuts (réservés aux statuts !) */
+  --ok: #1e7a52;            /* DISPONIBLE, succès */
+  --ok-soft: #e4efe8;
+  --warn: #d99a00;          /* RÉSERVÉ, en attente */
+  --warn-soft: #fbf0cc;
+  --danger: #c8331f;        /* SATURÉ, erreur, urgence critique */
+  --danger-soft: #f8e1dc;
+
+  /* Carte (Leaflet / SVG) */
+  --map-bg: #ece7da;
+  --map-water: #cfdfe3;
+  --map-road: #c9c1ae;
+
+  /* Typographie */
+  --font-ui: "IBM Plex Sans", system-ui, sans-serif;     /* toute l'interface */
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace; /* identifiants, minuteurs, codes */
+  --font-num: "Barlow Condensed", sans-serif;            /* gros chiffres (KPI) */
+  --fs-base: 14px;
+  --fs-small: 12px;
+  --fs-eyebrow: 11px;       /* petits titres en MAJUSCULES espacées */
+  --fs-h2: 22px;
+  --fs-h1: 34px;            /* poids 300, emphase en italique 600 */
+
+  /* Formes et profondeur */
+  --radius-sm: 6px;
+  --radius: 12px;           /* cartes */
+  --radius-lg: 16px;        /* bloc héro */
+  --radius-pill: 999px;     /* boutons, filtres, étiquettes */
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, .08);
+  --shadow-deep: 0 30px 60px -20px rgba(11, 47, 64, .55);
+
+  /* Mouvement (durées reprises de TeleTracking) */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --t-fast: .15s;           /* couleurs, survols */
+  --t: .22s;                /* cartes qui se soulèvent */
+  --t-slow: .45s;           /* tiroir latéral */
+}
+
+[data-theme="dark"] {
+  --bg: #0d1210;
+  --surface: #141a17;
+  --surface-2: #19201c;
+  --line: #24302a;
+  --line-2: #2f3c35;
+  --text: #eef2ef;
+  --text-2: #a9b5ae;
+  --text-3: #6c7a72;
+  --brand-deep: #0a2433;
+  --brand: #4fb3d9;
+  --brand-soft: #12303d;
+  --ok: #3fcf7f;
+  --ok-soft: #163026;
+  --warn: #f2c230;
+  --warn-soft: #3a3115;
+  --danger: #ff6b57;
+  --danger-soft: #3a1d19;
+  --map-bg: #131a17;
+  --map-water: #11242a;
+  --map-road: #2a3631;
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, .35);
+  --shadow-deep: 0 30px 60px -20px rgba(0, 0, 0, .7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Composants de base (à reprendre tels quels) ---------- */
+body { margin: 0; font-family: var(--font-ui); font-size: var(--fs-base); line-height: 1.5;
+       background: var(--bg); color: var(--text); transition: background .35s, color .35s; }
+
+.eyebrow { font-size: var(--fs-eyebrow); font-weight: 600; letter-spacing: 2.2px;
+           text-transform: uppercase; color: var(--brand); }
+
+.num { font-family: var(--font-num); font-weight: 700; font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); }
+
+/* Boutons pilule */
+.btn { border-radius: var(--radius-pill); font: inherit; font-size: 12.5px; font-weight: 600;
+       padding: 9px 18px; cursor: pointer; border: 0;
+       transition: transform var(--t) ease, box-shadow var(--t) ease, background var(--t) ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: var(--brand-deep); color: #fff; }
+.btn-primary:hover { box-shadow: 0 8px 20px -6px var(--brand-deep); }
+.btn-outline { background: transparent; color: var(--brand-deep); border: .8px solid var(--brand-deep); }
+[data-theme="dark"] .btn-primary { background: var(--brand); color: #0d1210; }
+[data-theme="dark"] .btn-outline { color: var(--brand-on); border-color: var(--brand-on); }
+
+/* Cartes */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px;
+        transition: transform var(--t) ease, box-shadow var(--t) ease, border-color var(--t) ease; }
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); border-color: var(--line-2); }
+
+/* Étiquettes de statut */
+.tag { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px;
+       font-weight: 500; padding: 3px 9px; border-radius: var(--radius-pill); white-space: nowrap; }
+.tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.tag-ok { background: var(--ok-soft); color: var(--ok); }
+.tag-warn { background: var(--warn-soft); color: var(--text); }
+.tag-warn::before { background: var(--warn); }
+.tag-danger { background: var(--danger-soft); color: var(--danger); }
+
+/* Filtres (chips) */
+.chip { border: 1px solid var(--line-2); background: var(--surface); border-radius: var(--radius-pill);
+        padding: 5px 12px; font-size: 11.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase;
+        color: var(--text-2); cursor: pointer; transition: all var(--t-fast) ease; }
+.chip.on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-deep); }
+
+/* Apparition en fondu vers le haut (à décaler avec animation-delay) */
+.rise { opacity: 0; transform: translateY(14px); animation: rise .6s var(--ease) forwards; }
+@keyframes rise { to { opacity: 1; transform: none; } }
