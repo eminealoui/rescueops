@@ -50,6 +50,11 @@ class GlobalExceptionHandlerTest {
             throw new BusinessRuleException("CAPACITE_INVALIDE", "Capacité inférieure aux places occupées");
         }
 
+        @GetMapping("/bad-request")
+        void badRequest() {
+            throw new BadRequestException("TRI_INVALIDE", "Tri non autorisé : motDePasse");
+        }
+
         @GetMapping("/forbidden-op")
         void forbiddenOp() {
             throw new ForbiddenOperationException("Seul le demandeur peut annuler");
@@ -97,6 +102,14 @@ class GlobalExceptionHandlerTest {
         mvc.perform(get("/business").with(jwt()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("CAPACITE_INVALIDE"));
+    }
+
+    @Test
+    void badRequestDonne400AvecSonCode() throws Exception {
+        mvc.perform(get("/bad-request").with(jwt()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TRI_INVALIDE"))
+                .andExpect(jsonPath("$.detail").value("Tri non autorisé : motDePasse"));
     }
 
     @Test

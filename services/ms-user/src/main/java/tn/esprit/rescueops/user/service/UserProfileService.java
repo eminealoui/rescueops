@@ -1,6 +1,14 @@
 package tn.esprit.rescueops.user.service;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import tn.esprit.rescueops.common.error.ForbiddenOperationException;
+import tn.esprit.rescueops.common.error.NotFoundException;
+import tn.esprit.rescueops.user.dto.PageResponse;
+import tn.esprit.rescueops.user.dto.UpdateMyProfileRequest;
+import tn.esprit.rescueops.user.dto.UserSummaryDto;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -52,6 +60,61 @@ public class UserProfileService {
                     .map(mapper::toResponse)
                     .orElseThrow(() -> raceOrDuplicate);
         }
+    }
+
+    /** Modifie les champs personnels du profil connecté. Un profil désactivé ne peut plus être modifié. */
+    public UserProfileResponse updateCurrent(CurrentUser user, UpdateMyProfileRequest request) {
+        getOrCreateCurrent(user);
+        return tx.execute(s -> {
+            UserProfile p = repository.findByKeycloakId(user.keycloakId()).orElseThrow();
+            if (!p.isActive()) {
+                throw new ForbiddenOperationException("Profil désactivé : modification impossible.");
+            }
+            p.setFirstName(request.firstName().trim());
+            p.setLastName(request.lastName().trim());
+            p.setPhone(blankToNull(request.phone()));
+            p.setAddress(blankToNull(request.address()));
+            return mapper.toResponse(repository.save(p));
+        });
+    }
+
+    public UserProfileResponse findByKeycloakId(String keycloakId) {
+        return tx.execute(s -> mapper.toResponse(load(keycloakId)));
+    }
+
+    public UserSummaryDto summary(String keycloakId) {
+        return tx.execute(s -> {
+            UserProfile p = load(keycloakId);
+            String name = String.join(" ", Stream.of(p.getFirstName(), p.getLastName())
+                    .filter(v -> v != null && !v.isBlank()).toList());
+            return new UserSummaryDto(p.getKeycloakId(), name.isBlank() ? p.getEmail() : name, p.getOrganisation());
+        });
+    }
+
+    /** Recherche paginée. {@code sort} est déjà validé par le contrôleur (champ autorisé + direction). */
+    public PageResponse<UserProfileResponse> search(String query, Boolean active, int page, int size, String sort) {
+        String[] parts = sort.split(",");
+        Sort order = Sort.by(Sort.Direction.fromString(parts[1]), parts[0]);
+        String q = query == null || query.isBlank() ? null : query.trim();
+        return tx.execute(s -> PageResponse.of(
+                repository.search(q, active, PageRequest.of(page, size, order)), mapper::toResponse));
+    }
+
+    public UserProfileResponse setActive(String keycloakId, boolean active) {
+        return tx.execute(s -> {
+            UserProfile p = load(keycloakId);
+            p.setActive(active);
+            return mapper.toResponse(repository.save(p));
+        });
+    }
+
+    private UserProfile load(String keycloakId) {
+        return repository.findByKeycloakId(keycloakId)
+                .orElseThrow(() -> new NotFoundException("Profil introuvable."));
+    }
+
+    private static String blankToNull(String v) {
+        return v == null || v.isBlank() ? null : v.trim();
     }
 
     /** Keycloak fait autorité sur l'email : on le resynchronise s'il a changé. */
