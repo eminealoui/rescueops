@@ -1,10 +1,14 @@
 package tn.esprit.rescueops.hospital.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tn.esprit.rescueops.common.error.BusinessRuleException;
 import tn.esprit.rescueops.common.error.ConflictException;
 import tn.esprit.rescueops.common.error.ForbiddenOperationException;
 import tn.esprit.rescueops.common.error.NotFoundException;
@@ -18,41 +22,58 @@ import tn.esprit.rescueops.hospital.event.CapaciteModifiee;
 import tn.esprit.rescueops.hospital.event.TransfertStatutChange;
 import tn.esprit.rescueops.hospital.repository.DemandeTransfertRepository;
 import tn.esprit.rescueops.hospital.repository.HistoriqueTransfertRepository;
+import tn.esprit.rescueops.hospital.repository.MissionTermineeRepository;
 import tn.esprit.rescueops.hospital.repository.ServiceHospitalierRepository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * BF-15 : cycle de vie des demandes de transfert.
  * Chaque opération = une transaction : transition conditionnelle, mouvement de place atomique,
  * historique, puis événement (publié sur RabbitMQ seulement après commit).
+ * Ordre des verrous : toujours le SERVICE avant la DEMANDE quand les deux sont modifiés (sinon interblocage MySQL).
  */
 @Service
 public class TransfertService {
 
+    private static final Logger log = LoggerFactory.getLogger(TransfertService.class);
+
     /** Acteur technique inscrit dans l'historique pour les actions automatiques. */
     public static final String SYSTEME = "systeme";
+
+    /** Statuts d'une demande encore « en cours » : une seule par mission. */
+    static final Set<StatutTransfert> OUVERTS = Set.of(StatutTransfert.DEMANDEE, StatutTransfert.PLACE_RETENUE,
+            StatutTransfert.CONFIRMEE, StatutTransfert.ADMIS);
 
     private final DemandeTransfertRepository demandes;
     private final ServiceHospitalierRepository services;
     private final HistoriqueTransfertRepository historique;
+    private final MissionTermineeRepository missionsTerminees;
     private final ApplicationEventPublisher events;
     private final HospitalProperties props;
 
     public TransfertService(DemandeTransfertRepository demandes, ServiceHospitalierRepository services,
-                            HistoriqueTransfertRepository historique, ApplicationEventPublisher events,
-                            HospitalProperties props) {
+                            HistoriqueTransfertRepository historique, MissionTermineeRepository missionsTerminees,
+                            ApplicationEventPublisher events, HospitalProperties props) {
         this.demandes = demandes;
         this.services = services;
         this.historique = historique;
+        this.missionsTerminees = missionsTerminees;
         this.events = events;
         this.props = props;
     }
 
     @Transactional
     public TransfertResponse creer(CreerTransfertRequest req, CurrentUser user) {
+        if (missionsTerminees.existsById(req.missionId())) {
+            throw new ConflictException("MISSION_TERMINEE", "Cette mission est terminée : aucun transfert ne peut être demandé.");
+        }
+        if (demandes.existsByMissionIdAndStatutIn(req.missionId(), OUVERTS)) {
+            throw new ConflictException("DEMANDE_EN_COURS", "Une demande de transfert est déjà en cours pour cette mission.");
+        }
         DemandeTransfert d = new DemandeTransfert();
         d.setMissionId(req.missionId());
         d.setSpecialiteRequise(req.specialiteRequise());
@@ -68,16 +89,22 @@ public class TransfertService {
     }
 
     /**
-     * DEMANDEE → PLACE_RETENUE. La place est prise atomiquement ; s'il n'y en a plus, tout est annulé (409).
-     * ORDRE IMPORTANT : d'abord la place (verrou exclusif sur le service), ensuite la demande. Dans l'ordre inverse,
-     * la clé étrangère demande→service pose un verrou partagé sur le service et 50 réservations simultanées
-     * s'interbloquent (constaté en test d'intégration MySQL).
+     * DEMANDEE → PLACE_RETENUE. Contrôles : la demande est à soi (ou coordinateur / admin), le service existe et
+     * correspond à la spécialité (ou au repli URGENCES_GENERALES). La place est prise atomiquement ;
+     * s'il n'y en a plus, tout est annulé (409).
      */
     @Transactional
     public TransfertResponse reserver(UUID id, UUID serviceId, CurrentUser user) {
         DemandeTransfert d = charger(id);
+        verifierProprietaireOuHopital(d, user, "réserver");
         if (d.getStatut() != StatutTransfert.DEMANDEE) {
             throw transitionInterdite(d.getStatut(), "réserver");
+        }
+        ServiceHospitalier cible = services.findById(serviceId)
+                .orElseThrow(() -> new NotFoundException("Service hospitalier introuvable."));
+        if (cible.getSpecialite() != d.getSpecialiteRequise() && cible.getSpecialite() != Specialite.URGENCES_GENERALES) {
+            throw new BusinessRuleException("SERVICE_INCOMPATIBLE", "Ce service (" + cible.getSpecialite()
+                    + ") ne correspond pas à la spécialité demandée (" + d.getSpecialiteRequise() + ").");
         }
         if (services.reserverPlace(serviceId) == 0) {
             throw new ConflictException("CAPACITE_EPUISEE", "Plus aucune place disponible dans ce service.");
@@ -93,9 +120,23 @@ public class TransfertService {
         return toResponse(charger(id), false);
     }
 
+    /** PLACE_RETENUE → CONFIRMEE, seulement avant l'échéance de la réservation. */
     @Transactional
     public TransfertResponse confirmer(UUID id, CurrentUser user) {
-        return transition(id, StatutTransfert.PLACE_RETENUE, StatutTransfert.CONFIRMEE, user.keycloakId(), null, false);
+        DemandeTransfert avant = charger(id);
+        if (avant.getStatut() != StatutTransfert.PLACE_RETENUE) {
+            throw transitionInterdite(avant.getStatut(), "confirmer");
+        }
+        if (demandes.confirmer(id, user.keycloakId(), Instant.now()) == 0) {
+            DemandeTransfert actuelle = charger(id);
+            if (actuelle.getStatut() == StatutTransfert.PLACE_RETENUE) {
+                throw new ConflictException("RESERVATION_EXPIREE",
+                        "Le délai de réservation est dépassé : la place va être libérée. Refaites une réservation.");
+            }
+            throw transitionInterdite(actuelle.getStatut(), "confirmer");
+        }
+        apresTransition(charger(id), StatutTransfert.PLACE_RETENUE, StatutTransfert.CONFIRMEE, user.keycloakId(), null, false);
+        return toResponse(charger(id), false);
     }
 
     @Transactional
@@ -118,11 +159,7 @@ public class TransfertService {
     @Transactional
     public TransfertResponse annuler(UUID id, CurrentUser user) {
         DemandeTransfert d = charger(id);
-        boolean autorise = user.keycloakId().equals(d.getDemandeurUserId())
-                || user.has(Role.COORDINATEUR_HOSPITALIER) || user.has(Role.ADMIN);
-        if (!autorise) {
-            throw new ForbiddenOperationException("Seul le demandeur, un coordinateur ou un admin peut annuler cette demande.");
-        }
+        verifierProprietaireOuHopital(d, user, "annuler");
         if (!StatutTransfert.ANNULABLE.contains(d.getStatut())) {
             throw transitionInterdite(d.getStatut(), "annuler");
         }
@@ -130,15 +167,26 @@ public class TransfertService {
                 StatutTransfert.OCCUPE_UNE_PLACE.contains(d.getStatut()));
     }
 
-    /** Annulation automatique (fin de mission). Retourne false si la demande n'était plus annulable. */
-    @Transactional
-    public boolean annulerAutomatiquement(UUID id, StatutTransfert statutActuel) {
-        if (demandes.changerStatut(id, statutActuel, StatutTransfert.ANNULEE, SYSTEME, null) == 0) {
-            return false;
+    /**
+     * Annulation automatique (fin de mission), dans SA propre transaction (pas d'interblocage avec d'autres demandes).
+     * Le statut est RELU à chaque tentative : si une réservation vient d'aboutir, la place est quand même rendue.
+     *
+     * @return true si la demande a été annulée par cet appel
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean annulerAutomatiquement(UUID id) {
+        for (int tentative = 0; tentative < 3; tentative++) {
+            StatutTransfert actuel = charger(id).getStatut();
+            if (!StatutTransfert.ANNULABLE.contains(actuel)) {
+                return false;
+            }
+            if (demandes.changerStatut(id, actuel, StatutTransfert.ANNULEE, SYSTEME, null, Instant.now()) == 1) {
+                apresTransition(charger(id), actuel, StatutTransfert.ANNULEE, SYSTEME, "fin de mission",
+                        StatutTransfert.OCCUPE_UNE_PLACE.contains(actuel));
+                return true;
+            }
         }
-        apresTransition(charger(id), statutActuel, StatutTransfert.ANNULEE, SYSTEME, "fin de mission",
-                StatutTransfert.OCCUPE_UNE_PLACE.contains(statutActuel));
-        return true;
+        return false;
     }
 
     /** PLACE_RETENUE → EXPIREE si l'échéance est passée. Retourne false si une autre action l'a déjà traitée. */
@@ -166,7 +214,7 @@ public class TransfertService {
     private TransfertResponse transition(UUID id, StatutTransfert attendu, StatutTransfert nouveau, String acteur,
                                          String motif, boolean rendreLaPlace) {
         DemandeTransfert avant = charger(id);
-        if (demandes.changerStatut(id, attendu, nouveau, acteur, motif) == 0) {
+        if (demandes.changerStatut(id, attendu, nouveau, acteur, motif, Instant.now()) == 0) {
             throw transitionInterdite(avant.getStatut(), verbe(nouveau));
         }
         apresTransition(charger(id), attendu, nouveau, acteur, motif, rendreLaPlace);
@@ -178,11 +226,24 @@ public class TransfertService {
                                  String commentaire, boolean rendreLaPlace) {
         UUID serviceId = d.getService() == null ? null : d.getService().getId();
         if (rendreLaPlace && serviceId != null) {
-            services.rendrePlace(serviceId);
+            if (services.rendrePlace(serviceId) == 0) {
+                // Ne devrait jamais arriver (compteur déjà au maximum) : incohérence à investiguer, jamais silencieuse.
+                log.error("Place non rendue pour la demande {} : le service {} est déjà à sa capacité maximale", d.getId(), serviceId);
+            }
             events.publishEvent(new CapaciteModifiee(serviceId));
         }
         tracer(d.getId(), ancien, nouveau, acteur, commentaire);
         events.publishEvent(new TransfertStatutChange(d.getId(), d.getMissionId(), serviceId, nouveau));
+    }
+
+    /** Une demande n'est manipulée que par son auteur, un coordinateur hospitalier ou un admin. */
+    private static void verifierProprietaireOuHopital(DemandeTransfert d, CurrentUser user, String action) {
+        boolean autorise = user.keycloakId().equals(d.getDemandeurUserId())
+                || user.has(Role.COORDINATEUR_HOSPITALIER) || user.has(Role.ADMIN);
+        if (!autorise) {
+            throw new ForbiddenOperationException(
+                    "Seul le demandeur, un coordinateur hospitalier ou un admin peut " + action + " cette demande.");
+        }
     }
 
     private void tracer(UUID demandeId, StatutTransfert ancien, StatutTransfert nouveau, String acteur, String commentaire) {

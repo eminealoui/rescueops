@@ -12,6 +12,7 @@ import tn.esprit.rescueops.hospital.domain.ServiceHospitalier;
 import tn.esprit.rescueops.hospital.dto.*;
 import tn.esprit.rescueops.hospital.event.CapaciteModifiee;
 import tn.esprit.rescueops.hospital.mapper.HospitalMapper;
+import tn.esprit.rescueops.hospital.repository.DemandeTransfertRepository;
 import tn.esprit.rescueops.hospital.repository.HistoriqueCapaciteRepository;
 import tn.esprit.rescueops.hospital.repository.HopitalRepository;
 import tn.esprit.rescueops.hospital.repository.ServiceHospitalierRepository;
@@ -27,15 +28,17 @@ public class EtablissementService {
     private final HopitalRepository hopitaux;
     private final ServiceHospitalierRepository services;
     private final HistoriqueCapaciteRepository historique;
+    private final DemandeTransfertRepository demandes;
     private final HospitalMapper mapper;
     private final ApplicationEventPublisher events;
 
     public EtablissementService(HopitalRepository hopitaux, ServiceHospitalierRepository services,
-                                HistoriqueCapaciteRepository historique, HospitalMapper mapper,
-                                ApplicationEventPublisher events) {
+                                HistoriqueCapaciteRepository historique, DemandeTransfertRepository demandes,
+                                HospitalMapper mapper, ApplicationEventPublisher events) {
         this.hopitaux = hopitaux;
         this.services = services;
         this.historique = historique;
+        this.demandes = demandes;
         this.mapper = mapper;
         this.events = events;
     }
@@ -83,32 +86,37 @@ public class EtablissementService {
         return r;
     }
 
+    /** Ouvre ou ferme un service par une requête ciblée : le compteur de places n'est jamais réécrit. */
     @Transactional
     public ServiceResponse changerEtatService(UUID serviceId, boolean actif) {
-        ServiceHospitalier s = chargerService(serviceId);
-        s.setActif(actif);
+        chargerService(serviceId);
+        services.changerActif(serviceId, actif);
         events.publishEvent(new CapaciteModifiee(serviceId));
-        return mapper.toResponse(s);
+        return mapper.toResponse(chargerService(serviceId));
     }
 
     /**
-     * Ajustement manuel. Règles : 0 ≤ places ≤ capacité, et la nouvelle capacité ne peut pas être inférieure
-     * aux places déjà occupées. Écriture « comparer puis écrire » : si une réservation passe entre la lecture
-     * et l'écriture, on refuse (409) au lieu d'écraser sa place.
+     * Ajustement manuel (ex. patients arrivés ou sortis hors RescueOps).
+     * Règle : on ne peut jamais déclarer libres des lits tenus par des transferts RescueOps
+     * (RETENUE, CONFIRMEE, ADMIS) : places ≤ capacité − lits tenus par RescueOps.
+     * La ligne est verrouillée (FOR UPDATE) pendant le calcul : aucune réservation ne peut s'intercaler.
      */
     @Transactional
     public ServiceResponse ajusterCapacite(UUID serviceId, CapaciteRequest req, String acteur) {
-        ServiceHospitalier s = chargerService(serviceId);
+        ServiceHospitalier s = services.findByIdPourMiseAJour(serviceId)
+                .orElseThrow(() -> new NotFoundException("Service hospitalier introuvable."));
         int ancienneCapacite = s.getCapaciteTotale();
         int anciennesPlaces = s.getPlacesDisponibles();
-        int occupees = ancienneCapacite - anciennesPlaces;
+        long tenuesParRescueOps = demandes.compterPlacesOccupees(serviceId);
         if (req.placesDisponibles() > req.capaciteTotale()) {
             throw new BusinessRuleException("CAPACITE_INVALIDE",
                     "Les places disponibles (" + req.placesDisponibles() + ") dépassent la capacité (" + req.capaciteTotale() + ").");
         }
-        if (req.capaciteTotale() < occupees) {
-            throw new BusinessRuleException("CAPACITE_INVALIDE",
-                    "La capacité ne peut pas être inférieure aux " + occupees + " places occupées.");
+        if (req.placesDisponibles() > req.capaciteTotale() - tenuesParRescueOps) {
+            throw new BusinessRuleException("CAPACITE_INVALIDE", tenuesParRescueOps
+                    + " lit(s) sont tenus par des transferts en cours : au plus "
+                    + Math.max(0, req.capaciteTotale() - tenuesParRescueOps) + " place(s) libre(s) pour une capacité de "
+                    + req.capaciteTotale() + ".");
         }
         int lignes = services.ajusterCapacite(serviceId, ancienneCapacite, anciennesPlaces,
                 req.capaciteTotale(), req.placesDisponibles());

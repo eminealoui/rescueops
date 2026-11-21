@@ -2,3 +2,6 @@
 spring:
   flyway:
     locations: classpath:db/migration,classpath:db/demo
+    # Les données de démo portent la version 100 : les migrations de schéma ajoutées ensuite (V2, V3...)
+    # doivent pouvoir s'appliquer après elles sur une base de démo existante.
+    out-of-order: true

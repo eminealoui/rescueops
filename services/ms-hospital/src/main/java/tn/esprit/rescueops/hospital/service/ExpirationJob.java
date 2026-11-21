@@ -45,9 +45,12 @@ public class ExpirationJob {
                 if (transferts.expirer(id)) {
                     expirees++;
                 }
-            } catch (RuntimeException e) {
-                // Déjà traitée ailleurs (refus, autre instance) ou erreur ponctuelle : on continue avec les autres.
+            } catch (tn.esprit.rescueops.common.error.ConflictException e) {
+                // Déjà traitée ailleurs (refus, autre instance) : normal.
                 log.debug("Expiration ignorée pour {} : {}", id, e.getMessage());
+            } catch (RuntimeException e) {
+                // Vraie erreur (base indisponible...) : visible, mais on continue avec les autres demandes.
+                log.warn("Échec de l'expiration de la demande {}", id, e);
             }
         }
         return expirees;

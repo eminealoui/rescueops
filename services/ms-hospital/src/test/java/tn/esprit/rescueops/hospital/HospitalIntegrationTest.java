@@ -59,6 +59,7 @@ class HospitalIntegrationTest {
     @Autowired RabbitTemplate rabbitTemplate;
     @Autowired AmqpAdmin amqpAdmin;
     @Autowired JdbcTemplate jdbc;
+    @Autowired org.springframework.transaction.PlatformTransactionManager txManager;
 
     private UUID nouveauService(int capacite) {
         HopitalResponse h = etablissements.creerHopital(new HopitalRequest("Hôpital " + UUID.randomUUID(), null, "Tunis", 36.8, 10.18, null));
@@ -122,8 +123,9 @@ class HospitalIntegrationTest {
         UUID demande = nouvelleDemande(UUID.randomUUID());
         transferts.reserver(demande, serviceId, AMBULANCIER);
         assertThat(places(serviceId)).isEqualTo(4);
-        jdbc.update("UPDATE demande_transfert SET expire_at = ? WHERE id = UUID_TO_BIN(?)",
-                java.sql.Timestamp.from(Instant.now().minusSeconds(60)), demande.toString());
+        // Échéance passée, calculée en UTC par MySQL (comme Hibernate stocke les dates).
+        jdbc.update("UPDATE demande_transfert SET expire_at = UTC_TIMESTAMP(6) - INTERVAL 60 SECOND WHERE id = UUID_TO_BIN(?)",
+                demande.toString());
 
         ExecutorService pool = Executors.newFixedThreadPool(2);
         CountDownLatch depart = new CountDownLatch(1);
@@ -149,6 +151,7 @@ class HospitalIntegrationTest {
         pool.shutdown();
 
         assertThat(expiree ^ refusee).as("exactement une des deux transitions réussit").isTrue();
+        assertThat(transferts.trouver(demande).statut()).isIn(StatutTransfert.EXPIREE, StatutTransfert.REFUSEE);
         assertThat(places(serviceId)).isEqualTo(5);
     }
 
@@ -198,5 +201,48 @@ class HospitalIntegrationTest {
                 Integer.class, demande.toString())).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM evenement_traite WHERE event_id = UUID_TO_BIN(?)",
                 Integer.class, evt.eventId().toString())).isEqualTo(1);
+    }
+
+    /**
+     * Revue C1 : une écriture « entité entière » (service chargé AVANT une réservation, sauvegardé APRÈS)
+     * ne doit jamais écraser le compteur. Les requêtes atomiques incrémentent la version : l'écriture périmée échoue.
+     */
+    @Test
+    void uneEcriturePerimeeNEcrasePasUneReservation() {
+        UUID serviceId = nouveauService(5);
+        UUID demande = nouvelleDemande(UUID.randomUUID());
+        var tx = new org.springframework.transaction.support.TransactionTemplate(txManager);
+
+        Throwable erreur = null;
+        try {
+            tx.executeWithoutResult(st -> {
+                var s = services.findById(serviceId).orElseThrow();        // lu avec 5 places
+                try {
+                    Executors.newSingleThreadExecutor().submit(() -> transferts.reserver(demande, serviceId, AMBULANCIER))
+                            .get(30, TimeUnit.SECONDS);                     // une réservation passe : 4 places
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+                s.setActif(false);                                          // écriture de l'entité périmée
+            });
+        } catch (RuntimeException e) {
+            erreur = e;
+        }
+
+        assertThat(erreur).isInstanceOf(org.springframework.orm.ObjectOptimisticLockingFailureException.class);
+        assertThat(places(serviceId)).isEqualTo(4);
+    }
+
+    /** Revue I4 : une réservation échue ne peut plus être confirmée, même si la tâche d'expiration n'est pas passée. */
+    @Test
+    void confirmerUneReservationEchue409() {
+        UUID serviceId = nouveauService(3);
+        UUID demande = nouvelleDemande(UUID.randomUUID());
+        transferts.reserver(demande, serviceId, AMBULANCIER);
+        jdbc.update("UPDATE demande_transfert SET expire_at = UTC_TIMESTAMP(6) - INTERVAL 5 SECOND WHERE id = UUID_TO_BIN(?)",
+                demande.toString());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> transferts.confirmer(demande, COORDINATEUR))
+                .isInstanceOf(ConflictException.class).extracting("code").isEqualTo("RESERVATION_EXPIREE");
     }
 }

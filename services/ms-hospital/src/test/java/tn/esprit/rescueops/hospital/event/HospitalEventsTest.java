@@ -3,12 +3,12 @@ package tn.esprit.rescueops.hospital.event;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.dao.DataIntegrityViolationException;
 import tn.esprit.rescueops.common.event.RescueOpsEvent;
 import tn.esprit.rescueops.hospital.domain.DemandeTransfert;
 import tn.esprit.rescueops.hospital.domain.StatutTransfert;
 import tn.esprit.rescueops.hospital.repository.DemandeTransfertRepository;
 import tn.esprit.rescueops.hospital.repository.EvenementTraiteRepository;
+import tn.esprit.rescueops.hospital.repository.MissionTermineeRepository;
 import tn.esprit.rescueops.hospital.repository.ServiceHospitalierRepository;
 import tn.esprit.rescueops.hospital.service.TransfertService;
 
@@ -65,27 +65,31 @@ class HospitalEventsTest {
     void missionTermineeAnnuleLesDemandesEnCours() {
         DemandeTransfertRepository demandes = mock(DemandeTransfertRepository.class);
         EvenementTraiteRepository traites = mock(EvenementTraiteRepository.class);
+        MissionTermineeRepository missions = mock(MissionTermineeRepository.class);
         TransfertService transferts = mock(TransfertService.class);
         UUID mission = UUID.randomUUID();
         DemandeTransfert a = demande(StatutTransfert.PLACE_RETENUE), b = demande(StatutTransfert.DEMANDEE);
         when(demandes.findByMissionIdAndStatutIn(eq(mission), anyList())).thenReturn(List.of(a, b));
 
-        new MissionTermineeListener(demandes, traites, transferts)
+        new MissionTermineeListener(demandes, traites, missions, transferts)
                 .recevoir(new RescueOpsEvent<>(UUID.randomUUID(), "mission.terminee", 1, Instant.now(), null,
                         Map.of("missionId", mission.toString())));
 
-        verify(transferts).annulerAutomatiquement(a.getId(), StatutTransfert.PLACE_RETENUE);
-        verify(transferts).annulerAutomatiquement(b.getId(), StatutTransfert.DEMANDEE);
+        verify(transferts).annulerAutomatiquement(a.getId());
+        verify(transferts).annulerAutomatiquement(b.getId());
+        verify(missions).save(any());   // la mission est mémorisée : plus aucune demande ne pourra être créée pour elle
+        verify(traites).save(any());
     }
 
     @Test
     void memeEventIdTraiteUneSeuleFois() {
         DemandeTransfertRepository demandes = mock(DemandeTransfertRepository.class);
         EvenementTraiteRepository traites = mock(EvenementTraiteRepository.class);
+        MissionTermineeRepository missions = mock(MissionTermineeRepository.class);
         TransfertService transferts = mock(TransfertService.class);
         when(traites.existsById(any())).thenReturn(true);   // déjà traité lors d'une livraison précédente
 
-        new MissionTermineeListener(demandes, traites, transferts)
+        new MissionTermineeListener(demandes, traites, missions, transferts)
                 .recevoir(new RescueOpsEvent<>(UUID.randomUUID(), "mission.terminee", 1, Instant.now(), null,
                         Map.of("missionId", UUID.randomUUID().toString())));
 
@@ -93,12 +97,26 @@ class HospitalEventsTest {
         verify(demandes, never()).findByMissionIdAndStatutIn(any(), any());
     }
 
+    /** Revue M2 : un missionId mal formé ne doit pas être rejoué 3 fois : il est écarté (et journalisé) tout de suite. */
+    @Test
+    void missionIdMalFormeEstEcarteSansRejeu() {
+        EvenementTraiteRepository traites = mock(EvenementTraiteRepository.class);
+        TransfertService transferts = mock(TransfertService.class);
+
+        new MissionTermineeListener(mock(DemandeTransfertRepository.class), traites, mock(MissionTermineeRepository.class), transferts)
+                .recevoir(new RescueOpsEvent<>(UUID.randomUUID(), "mission.terminee", 1, Instant.now(), null,
+                        Map.of("missionId", "pas-un-uuid")));
+
+        verifyNoInteractions(transferts);
+        verify(traites).save(any());
+    }
+
     @Test
     void messageSansMissionIdEstIgnoreSansErreur() {
         DemandeTransfertRepository demandes = mock(DemandeTransfertRepository.class);
         TransfertService transferts = mock(TransfertService.class);
 
-        new MissionTermineeListener(demandes, mock(EvenementTraiteRepository.class), transferts)
+        new MissionTermineeListener(demandes, mock(EvenementTraiteRepository.class), mock(MissionTermineeRepository.class), transferts)
                 .recevoir(new RescueOpsEvent<>(UUID.randomUUID(), "mission.terminee", 1, Instant.now(), null, Map.of()));
 
         verifyNoInteractions(transferts);

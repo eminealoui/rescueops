@@ -11,6 +11,7 @@ import tn.esprit.rescueops.hospital.domain.ServiceHospitalier;
 import tn.esprit.rescueops.hospital.domain.Specialite;
 import tn.esprit.rescueops.hospital.dto.CapaciteRequest;
 import tn.esprit.rescueops.hospital.mapper.HospitalMapperImpl;
+import tn.esprit.rescueops.hospital.repository.DemandeTransfertRepository;
 import tn.esprit.rescueops.hospital.repository.HistoriqueCapaciteRepository;
 import tn.esprit.rescueops.hospital.repository.HopitalRepository;
 import tn.esprit.rescueops.hospital.repository.ServiceHospitalierRepository;
@@ -29,6 +30,7 @@ class EtablissementServiceTest {
     private HopitalRepository hopitaux;
     private ServiceHospitalierRepository services;
     private HistoriqueCapaciteRepository historique;
+    private DemandeTransfertRepository demandes;
     private EtablissementService service;
     private final UUID serviceId = UUID.randomUUID();
 
@@ -37,11 +39,17 @@ class EtablissementServiceTest {
         hopitaux = mock(HopitalRepository.class);
         services = mock(ServiceHospitalierRepository.class);
         historique = mock(HistoriqueCapaciteRepository.class);
-        service = new EtablissementService(hopitaux, services, historique, new HospitalMapperImpl(),
+        demandes = mock(DemandeTransfertRepository.class);
+        service = new EtablissementService(hopitaux, services, historique, demandes, new HospitalMapperImpl(),
                 mock(ApplicationEventPublisher.class));
     }
 
+    /** Service dont « occupeesParRescueOps » places sont tenues par des demandes RETENUE / CONFIRMEE / ADMIS. */
     private void serviceExistant(int capacite, int libres) {
+        serviceExistant(capacite, libres, capacite - libres);
+    }
+
+    private void serviceExistant(int capacite, int libres, long occupeesParRescueOps) {
         Hopital h = new Hopital();
         h.setId(UUID.randomUUID());
         ServiceHospitalier s = new ServiceHospitalier();
@@ -52,6 +60,8 @@ class EtablissementServiceTest {
         s.setPlacesDisponibles(libres);
         s.setActif(true);
         when(services.findById(serviceId)).thenReturn(Optional.of(s));
+        when(services.findByIdPourMiseAJour(serviceId)).thenReturn(Optional.of(s));
+        when(demandes.compterPlacesOccupees(serviceId)).thenReturn(occupeesParRescueOps);
     }
 
     @Test
@@ -98,6 +108,40 @@ class EtablissementServiceTest {
                 .isInstanceOf(ConflictException.class)
                 .extracting("code").isEqualTo("MODIFICATION_CONCURRENTE");
         verify(historique, never()).save(any());
+    }
+
+    /** Revue C2 : 8 lits tenus par des transferts, le coordinateur ne peut pas déclarer 10 places libres sur 10. */
+    @Test
+    void ajusterCapaciteNePeutPasLibererDesLitsTenusParDesTransferts() {
+        serviceExistant(10, 2, 8);
+
+        assertThatThrownBy(() -> service.ajusterCapacite(serviceId, new CapaciteRequest(10, 10, "erreur"), "coord"))
+                .isInstanceOf(BusinessRuleException.class)
+                .extracting("code").isEqualTo("CAPACITE_INVALIDE");
+        verify(services, never()).ajusterCapacite(any(), anyInt(), anyInt(), anyInt(), anyInt());
+    }
+
+    /** Patients sortis hors RescueOps : le coordinateur peut libérer les lits qui ne sont PAS tenus par un transfert. */
+    @Test
+    void ajusterCapacitePeutLibererLesLitsHorsRescueOps() {
+        serviceExistant(10, 2, 3);   // 8 occupés, dont seulement 3 par des transferts RescueOps
+        when(services.ajusterCapacite(serviceId, 10, 2, 10, 7)).thenReturn(1);
+
+        service.ajusterCapacite(serviceId, new CapaciteRequest(10, 7, "sorties hors RescueOps"), "coord");
+
+        verify(services).ajusterCapacite(serviceId, 10, 2, 10, 7);
+    }
+
+    /** Revue C1 : fermer un service ne doit jamais réécrire le compteur de places (requête ciblée). */
+    @Test
+    void fermerUnServiceNeTouchePasAuxPlaces() {
+        serviceExistant(10, 4);
+        when(services.changerActif(serviceId, false)).thenReturn(1);
+
+        service.changerEtatService(serviceId, false);
+
+        verify(services).changerActif(serviceId, false);
+        verify(services, never()).save(any());
     }
 
     @Test

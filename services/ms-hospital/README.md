@@ -96,5 +96,7 @@ Cette commande lance **49 tests**, dont 5 sur un **vrai MySQL 8.4 et un vrai Rab
 
 ## Limites connues
 
+- **Un coordinateur hospitalier peut agir sur les demandes de tous les hôpitaux.** Le rattachement d'un coordinateur à **son** établissement n'existe pas encore : il faudrait un attribut Keycloak (`hopitalId`) ou un champ dans ms-user.
+
 - **Sans pattern Outbox**, un événement est perdu (et journalisé en erreur) si RabbitMQ est en panne au moment exact de la publication. L'opération en base, elle, reste valide.
 - **La distance est calculée à vol d'oiseau** (formule de Haversine), pas par la route.
