@@ -5,6 +5,8 @@
 #    docker compose -f docker-compose.infra.yml up -d
 #
 #  Chaque membre lance ensuite SON microservice depuis IntelliJ (profil "local").
+#  Ports publiés sur 127.0.0.1 uniquement : rien n'est exposé au réseau (Wi-Fi du campus),
+#  car les mots de passe de développement sont publics et Eureka n'a pas d'authentification.
 # =====================================================================
 name: rescueops
 
@@ -23,7 +25,7 @@ services:
       TRAINING_DB_PASSWORD: ${TRAINING_DB_PASSWORD}
       TZ: UTC
     # 3307 côté machine : le port 3306 est souvent déjà pris par un MySQL installé sous Windows.
-    ports: ["${MYSQL_HOST_PORT:-3307}:3306"]
+    ports: ["127.0.0.1:${MYSQL_HOST_PORT:-3307}:3306"]
     volumes:
       - mysql-data:/var/lib/mysql
       - ./infrastructure/mysql/init:/docker-entrypoint-initdb.d:ro
@@ -45,7 +47,7 @@ services:
       KC_HOSTNAME: http://localhost:8180
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HEALTH_ENABLED: "true"
-    ports: ["8180:8080"]
+    ports: ["127.0.0.1:8180:8080"]
     volumes:
       - keycloak-data:/opt/keycloak/data
       # Import au premier démarrage uniquement (un realm existant n'est pas écrasé).
@@ -60,10 +62,13 @@ services:
 
   rabbitmq:
     image: rabbitmq:4.3.8-management
+    # Nom de nœud fixe (rabbit@rabbitmq) : sans lui, RabbitMQ repart à vide à chaque recréation
+    # du conteneur (files durables et messages en DLQ perdus).
+    hostname: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    ports: ["5672:5672", "15672:15672"]
+    ports: ["127.0.0.1:5672:5672", "127.0.0.1:15672:15672"]
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -95,7 +100,7 @@ services:
     image: rescueops/discovery-server:dev
     environment:
       EUREKA_HOSTNAME: discovery-server
-    ports: ["8761:8761"]
+    ports: ["127.0.0.1:8761:8761"]
     networks: [rescueops-net]
 
   api-gateway:
@@ -106,7 +111,7 @@ services:
     image: rescueops/api-gateway:dev
     environment:
       SPRING_PROFILES_ACTIVE: docker
-    ports: ["8080:8080"]
+    ports: ["127.0.0.1:8080:8080"]
     # Permet d'atteindre un microservice lancé depuis IntelliJ sur la machine (profil "local").
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:

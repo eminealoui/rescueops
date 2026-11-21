@@ -67,4 +67,20 @@ class GatewayHttpTest {
     void healthEstPublic() {
         client.get().uri("/actuator/health").exchange().expectStatus().isOk();
     }
+
+    /** Revue finale n°1 : /docs ne doit pas devenir un proxy public vers tout le service. */
+    @Test
+    void docsNExposePasLesRoutesMetierSansToken() {
+        client.get().uri("/docs/ms-hospital/api/hospitals/1").exchange()
+                .expectStatus().isUnauthorized();
+        client.get().uri("/docs/ms-user/actuator/env").exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void laDocumentationOpenApiResteAccessibleSansToken() {
+        // Pas d'instance en test : 503 prouve que la route est publique et ciblée (et non un 401).
+        client.get().uri("/docs/ms-hospital/v3/api-docs").exchange()
+                .expectStatus().isEqualTo(503);
+    }
 }

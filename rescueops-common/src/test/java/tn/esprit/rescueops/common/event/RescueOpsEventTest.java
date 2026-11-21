@@ -57,13 +57,30 @@ class RescueOpsEventTest {
     void autoConfigurationDeclareLesExchanges() {
         new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(RescueOpsAmqpAutoConfiguration.class))
-                .withBean(ConnectionFactory.class, () -> new CachingConnectionFactory("localhost"))
+                .withConfiguration(AutoConfigurations.of(org.springframework.boot.rabbitmq.autoconfigure.RabbitAutoConfiguration.class))
                 .run(ctx -> {
                     assertThat(ctx.getBean("rescueOpsEventsExchange", TopicExchange.class).getName())
                             .isEqualTo("rescueops.events");
                     assertThat(ctx.getBean("rescueOpsEventsDlx", DirectExchange.class).getName())
                             .isEqualTo("rescueops.events.dlx");
                     assertThat(ctx.getBean(RabbitTemplate.class).getExchange()).isEqualTo("rescueops.events");
+                });
+    }
+
+    /** Revue finale n°5 : le RabbitTemplate de Boot est conservé, donc spring.rabbitmq.template.* reste actif. */
+    @Test
+    void lesProprietesSpringRabbitmqTemplateRestentActives() {
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(RescueOpsAmqpAutoConfiguration.class,
+                        org.springframework.boot.rabbitmq.autoconfigure.RabbitAutoConfiguration.class))
+                .withPropertyValues("spring.rabbitmq.template.routing-key=cle.par.defaut",
+                        "spring.rabbitmq.template.mandatory=true")
+                .run(ctx -> {
+                    RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
+                    assertThat(template.getRoutingKey()).isEqualTo("cle.par.defaut");
+                    assertThat(template.getExchange()).isEqualTo("rescueops.events");
+                    assertThat(template.getMessageConverter())
+                            .isInstanceOf(org.springframework.amqp.support.converter.JacksonJsonMessageConverter.class);
                 });
     }
 

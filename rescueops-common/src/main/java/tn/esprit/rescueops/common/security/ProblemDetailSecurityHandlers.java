@@ -15,7 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 
 /** Réponses 401 et 403 au même format ProblemDetail que les autres erreurs. */
-class ProblemDetailSecurityHandlers implements AuthenticationEntryPoint, AccessDeniedHandler {
+public class ProblemDetailSecurityHandlers implements AuthenticationEntryPoint, AccessDeniedHandler {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
 

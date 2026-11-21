@@ -46,49 +46,49 @@ spring:
               uri: lb://ms-training
               predicates:
                 - Path=/api/trainings/**
-            # Documentation OpenAPI de chaque service, agrégée dans un seul Swagger UI (public)
+            # Documentation OpenAPI de chaque service (public) : UNIQUEMENT /v3/api-docs, jamais le reste du service
             - id: docs-ms-user
               uri: lb://ms-user
               predicates:
-                - Path=/docs/ms-user/**
+                - Path=/docs/ms-user/v3/api-docs,/docs/ms-user/v3/api-docs/**
               filters:
-                - RewritePath=/docs/ms-user/(?<path>.*), /$\{path}
+                - RewritePath=/docs/ms-user/(?<path>v3/api-docs.*), /$\{path}
             - id: docs-ms-hospital
               uri: lb://ms-hospital
               predicates:
-                - Path=/docs/ms-hospital/**
+                - Path=/docs/ms-hospital/v3/api-docs,/docs/ms-hospital/v3/api-docs/**
               filters:
-                - RewritePath=/docs/ms-hospital/(?<path>.*), /$\{path}
+                - RewritePath=/docs/ms-hospital/(?<path>v3/api-docs.*), /$\{path}
             - id: docs-ms-emergency
               uri: lb://ms-emergency
               predicates:
-                - Path=/docs/ms-emergency/**
+                - Path=/docs/ms-emergency/v3/api-docs,/docs/ms-emergency/v3/api-docs/**
               filters:
-                - RewritePath=/docs/ms-emergency/(?<path>.*), /$\{path}
+                - RewritePath=/docs/ms-emergency/(?<path>v3/api-docs.*), /$\{path}
             - id: docs-ms-resource
               uri: lb://ms-resource
               predicates:
-                - Path=/docs/ms-resource/**
+                - Path=/docs/ms-resource/v3/api-docs,/docs/ms-resource/v3/api-docs/**
               filters:
-                - RewritePath=/docs/ms-resource/(?<path>.*), /$\{path}
+                - RewritePath=/docs/ms-resource/(?<path>v3/api-docs.*), /$\{path}
             - id: docs-ms-dispatch
               uri: lb://ms-dispatch
               predicates:
-                - Path=/docs/ms-dispatch/**
+                - Path=/docs/ms-dispatch/v3/api-docs,/docs/ms-dispatch/v3/api-docs/**
               filters:
-                - RewritePath=/docs/ms-dispatch/(?<path>.*), /$\{path}
+                - RewritePath=/docs/ms-dispatch/(?<path>v3/api-docs.*), /$\{path}
             - id: docs-ms-intervention
               uri: lb://ms-intervention
               predicates:
-                - Path=/docs/ms-intervention/**
+                - Path=/docs/ms-intervention/v3/api-docs,/docs/ms-intervention/v3/api-docs/**
               filters:
-                - RewritePath=/docs/ms-intervention/(?<path>.*), /$\{path}
+                - RewritePath=/docs/ms-intervention/(?<path>v3/api-docs.*), /$\{path}
             - id: docs-ms-training
               uri: lb://ms-training
               predicates:
-                - Path=/docs/ms-training/**
+                - Path=/docs/ms-training/v3/api-docs,/docs/ms-training/v3/api-docs/**
               filters:
-                - RewritePath=/docs/ms-training/(?<path>.*), /$\{path}
+                - RewritePath=/docs/ms-training/(?<path>v3/api-docs.*), /$\{path}
 
 eureka:
   client:

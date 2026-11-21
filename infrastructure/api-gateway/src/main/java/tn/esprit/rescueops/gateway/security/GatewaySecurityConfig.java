@@ -44,7 +44,7 @@ public class GatewaySecurityConfig {
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/actuator/health/**", "/actuator/health", "/actuator/info",
-                                "/docs/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**")
+                                "/docs/*/v3/api-docs", "/docs/*/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**")
                         .permitAll()
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(rs -> rs

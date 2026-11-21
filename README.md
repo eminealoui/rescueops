@@ -65,6 +65,14 @@ rescueops.security.jwk-set-uri: http://localhost:8180/realms/rescueops/protocol/
 spring.datasource.url: jdbc:mysql://localhost:3307/<votre>_db
 ```
 
+Et dans `application.yml` (tous profils), pour avoir l'identifiant de corrélation dans les logs :
+
+```yaml
+spring.config.import: classpath:rescueops-logging.properties
+```
+
+Besoin de **votre propre** `SecurityFilterChain` ? Terminez-la par `RescueOpsSecurity.applyDefaults(http, props).build()`. Sinon, vous perdez les rôles Keycloak et toutes les règles `hasRole(...)` renvoient 403. Pour seulement ajouter des chemins publics, utilisez la propriété `rescueops.security.public-paths`.
+
 4. Le service apparaît dans Eureka. La Gateway le route **sans aucune modification** : les 7 routes sont déjà déclarées.
 
 | Service | Préfixe d'API | Base | Compte MySQL |
@@ -108,9 +116,11 @@ Le client `rescueops-dev-cli` (grant password) sert **uniquement au développeme
 ## Vérifier le socle
 
 ```bash
-./mvnw test                                                            # tests de tous les modules
+./mvnw install                                                         # tests de tous les modules + installation
+./mvnw -f tools/echo-service package -DskipTests                       # faux service de test (hors modules)
 java -jar tools/echo-service/target/echo-service-0.1.0-SNAPSHOT.jar --spring.profiles.active=local &
 bash scripts/smoke-infra.sh                                            # attendu : SMOKE OK (6/6)
+bash scripts/check-rabbit-persistence.sh                               # attendu : RABBIT PERSISTENCE OK
 ```
 
 Le smoke test vérifie six points :

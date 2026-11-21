@@ -7,7 +7,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -38,21 +37,8 @@ public class RescueOpsSecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(SecurityFilterChain.class)
-    SecurityFilterChain rescueOpsSecurityFilterChain(HttpSecurity http, RescueOpsSecurityProperties props) {
-        ProblemDetailSecurityHandlers handlers = new ProblemDetailSecurityHandlers();
-        http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(props.publicPaths().toArray(String[]::new)).permitAll()
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(rs -> rs
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakRoleConverter()))
-                        .authenticationEntryPoint(handlers)
-                        .accessDeniedHandler(handlers))
-                .exceptionHandling(e -> e
-                        .authenticationEntryPoint(handlers)
-                        .accessDeniedHandler(handlers));
-        return http.build();
+    SecurityFilterChain rescueOpsSecurityFilterChain(HttpSecurity http, RescueOpsSecurityProperties props)
+            throws Exception {
+        return RescueOpsSecurity.applyDefaults(http, props).build();
     }
 }
