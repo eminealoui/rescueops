@@ -24,7 +24,8 @@ public class UserProfile {
     @Column(name = "keycloak_id", nullable = false, unique = true, length = 36, updatable = false)
     private String keycloakId;
 
-    @Column(length = 254, unique = true)
+    /** Copie de l'email Keycloak (resynchronisée à chaque /me). Pas unique ici : Keycloak garantit l'unicité. */
+    @Column(length = 254)
     private String email;
 
     @Column(name = "first_name", length = 100)

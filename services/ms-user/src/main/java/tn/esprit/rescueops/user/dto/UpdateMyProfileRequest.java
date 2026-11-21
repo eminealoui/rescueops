@@ -13,7 +13,7 @@ import jakarta.validation.constraints.Size;
 public record UpdateMyProfileRequest(
         @NotBlank @Size(max = 100) String firstName,
         @NotBlank @Size(max = 100) String lastName,
-        @Pattern(regexp = "^\\+?[1-9][0-9]{7,14}$", message = "format international attendu, ex. +21698123456")
+        @Pattern(regexp = "^$|^\\+?[1-9][0-9]{7,14}$", message = "format international attendu, ex. +21698123456 (vide pour effacer)")
         String phone,
         @Size(max = 255) String address) {
 }

@@ -50,6 +50,11 @@ class GlobalExceptionHandlerTest {
             throw new BusinessRuleException("CAPACITE_INVALIDE", "Capacité inférieure aux places occupées");
         }
 
+        @GetMapping("/optimistic")
+        void optimistic() {
+            throw new org.springframework.dao.OptimisticLockingFailureException("Row was updated by another transaction");
+        }
+
         @GetMapping("/bad-request")
         void badRequest() {
             throw new BadRequestException("TRI_INVALIDE", "Tri non autorisé : motDePasse");
@@ -102,6 +107,14 @@ class GlobalExceptionHandlerTest {
         mvc.perform(get("/business").with(jwt()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("CAPACITE_INVALIDE"));
+    }
+
+    @Test
+    void modificationSimultaneeDonne409EtNon500() throws Exception {
+        mvc.perform(get("/optimistic").with(jwt()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("MODIFICATION_CONCURRENTE"))
+                .andExpect(content().string(not(containsString("another transaction"))));
     }
 
     @Test

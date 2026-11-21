@@ -95,12 +95,59 @@ class UserProfileIntegrationTest {
                 .andExpect(jsonPath("$.content[0].lastName").value("Ben Salah"));
     }
 
+    /**
+     * Revue C1 : Keycloak garantit l'unicité des emails ; la copie dans le profil peut être périmée
+     * (ancien profil). Un email repris par un autre compte ne doit JAMAIS bloquer l'accès à son profil.
+     */
     @Test
-    void emailDejaPrisParUnAutreProfil409() throws Exception {
+    void emailReprisParUnNouveauCompteNeBloquePas() throws Exception {
         mvc.perform(get("/api/users/me").with(user("sub-A", "x@rescueops.test", "A", "A"))).andExpect(status().isOk());
 
         mvc.perform(get("/api/users/me").with(user("sub-B", "x@rescueops.test", "B", "B")))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CONFLIT_DONNEES"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.keycloakId").value("sub-B"));
+    }
+
+    @Test
+    void resynchronisationVersUnEmailEncorePorteParUnAncienProfilNeBloquePas() throws Exception {
+        mvc.perform(get("/api/users/me").with(user("sub-A", "a@rescueops.test", "A", "A"))).andExpect(status().isOk());
+        mvc.perform(get("/api/users/me").with(user("sub-B", "b@rescueops.test", "B", "B"))).andExpect(status().isOk());
+
+        // sub-B prend dans Keycloak l'email que sub-A n'utilise plus (sub-A ne s'est pas reconnecté depuis).
+        mvc.perform(get("/api/users/me").with(user("sub-B", "a@rescueops.test", "B", "B")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("a@rescueops.test"));
+    }
+
+    /** Revue I1 : plusieurs onglets après un changement d'email → pas de 500 de verrouillage optimiste. */
+    @Test
+    void accesParallelesApresChangementDEmailRenvoientTous200() throws Exception {
+        mvc.perform(get("/api/users/me").with(user("sub-P", "old@rescueops.test", "P", "P"))).andExpect(status().isOk());
+
+        ExecutorService pool = Executors.newFixedThreadPool(10);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<Integer>> results = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            results.add(pool.submit(() -> {
+                start.await();
+                return mvc.perform(get("/api/users/me").with(user("sub-P", "new@rescueops.test", "P", "P")))
+                        .andReturn().getResponse().getStatus();
+            }));
+        }
+        start.countDown();
+        for (Future<Integer> f : results) {
+            assertThat(f.get(30, TimeUnit.SECONDS)).isEqualTo(200);
+        }
+        pool.shutdown();
+        assertThat(repository.findByKeycloakId("sub-P").orElseThrow().getEmail()).isEqualTo("new@rescueops.test");
+    }
+
+    /** Revue I3 : un nom plus long que la colonne (Keycloak autorise 255) ne doit pas empêcher la création. */
+    @Test
+    void nomTresLongDansLeTokenEstTronqueSansBloquer() throws Exception {
+        String longName = "N".repeat(255);
+        mvc.perform(get("/api/users/me").with(user("sub-L", "l@rescueops.test", longName, longName)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("N".repeat(100)));
     }
 }

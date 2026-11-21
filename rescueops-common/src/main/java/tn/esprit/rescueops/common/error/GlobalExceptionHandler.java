@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -60,6 +61,14 @@ public class GlobalExceptionHandler {
         log.warn("Violation de contrainte en base sur {} : {}", req.getRequestURI(), ex.getMostSpecificCause().getMessage());
         return ProblemResponses.of(HttpStatus.CONFLICT, "CONFLIT_DONNEES",
                 "La donnée entre en conflit avec une donnée existante.", req.getRequestURI());
+    }
+
+    /** Deux modifications simultanées du même enregistrement (@Version) : le client doit recharger et réessayer. */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ProblemDetail concurrentModification(OptimisticLockingFailureException ex, HttpServletRequest req) {
+        log.info("Modification concurrente sur {} : {}", req.getRequestURI(), ex.getMessage());
+        return ProblemResponses.of(HttpStatus.CONFLICT, "MODIFICATION_CONCURRENTE",
+                "Cette donnée vient d'être modifiée par ailleurs. Rechargez-la puis réessayez.", req.getRequestURI());
     }
 
     /** {@code @PreAuthorize} refusé : même réponse que le filtre de sécurité. */

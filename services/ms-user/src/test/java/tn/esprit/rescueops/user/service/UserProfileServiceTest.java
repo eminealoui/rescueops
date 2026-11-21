@@ -18,6 +18,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import tn.esprit.rescueops.common.error.BadRequestException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -95,6 +97,27 @@ class UserProfileServiceTest {
         assertThat(r.firstName()).isNull();
         assertThat(r.lastName()).isNull();
         verify(repository).save(any());
+    }
+
+    /** Revue I2 : le résumé public ne doit jamais exposer l'email, même si le profil n'a pas de nom. */
+    @Test
+    void resumeSansNomNExposePasLEmail() {
+        UserProfile p = existing("secret@rescueops.test");
+        p.setFirstName(null);
+        when(repository.findByKeycloakId("sub-1")).thenReturn(Optional.of(p));
+
+        assertThat(service.summary("sub-1").displayName()).isEqualTo("Utilisateur");
+    }
+
+    /** Revue I3 : un token sans « sub » est refusé proprement (400), pas par une erreur SQL. */
+    @Test
+    void tokenSansSujetEstRefuse() {
+        CurrentUser sansSub = new CurrentUser(null, "a@rescueops.test", "A", "B", Set.of(Role.CITOYEN));
+
+        assertThatThrownBy(() -> service.getOrCreateCurrent(sansSub))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("code").isEqualTo("TOKEN_SANS_SUJET");
+        verify(repository, never()).save(any());
     }
 
     @Test

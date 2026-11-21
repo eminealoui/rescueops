@@ -9,6 +9,12 @@
 | API | `http://localhost:8080/api/users/...` |
 | Base | `user_db`, compte `user_svc` / `dev_user` (port 3307) |
 
+> ⚠️ **Tu veux modifier ms-user et le lancer depuis IntelliJ ?** Arrête d'abord le conteneur, sinon deux instances tournent et la Gateway alterne entre l'ancienne et la nouvelle version :
+> ```powershell
+> docker compose -f docker-compose.infra.yml stop ms-user
+> ```
+> Pour le remettre ensuite : `docker compose -f docker-compose.infra.yml up -d ms-user`.
+
 ## Ce que fait ce service
 
 - **Keycloak** gère les **comptes, mots de passe et rôles**.
