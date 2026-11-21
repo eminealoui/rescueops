@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import tn.esprit.rescueops.hospital.WebSliceTest;
 import tn.esprit.rescueops.hospital.service.EtablissementService;
+import tn.esprit.rescueops.hospital.service.TableauDeBordService;
 
 import java.util.List;
 
@@ -19,17 +20,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebSliceTest
-class HopitalControllerTest {
+class HopitalControllerTest extends ApiTestBase {
 
     static final String HOPITAL = """
             {"nom":"CHU La Rabta","adresse":"Bab Saadoun","ville":"Tunis","latitude":36.8065,"longitude":10.1647}""";
 
-    @Autowired
-    MockMvc mvc;
 
-    @MockitoBean
-    EtablissementService service;
+
 
     static RequestPostProcessor as(String role) {
         return jwt().jwt(j -> j.subject("u-" + role)).authorities(new SimpleGrantedAuthority("ROLE_" + role));
@@ -39,7 +36,7 @@ class HopitalControllerTest {
     void creationParCitoyen403() throws Exception {
         mvc.perform(post("/api/hospitals").with(as("CITOYEN")).contentType(MediaType.APPLICATION_JSON).content(HOPITAL))
                 .andExpect(status().isForbidden());
-        verify(service, never()).creerHopital(any());
+        verify(etablissements, never()).creerHopital(any());
     }
 
     @Test
@@ -47,7 +44,7 @@ class HopitalControllerTest {
         mvc.perform(post("/api/hospitals").with(as("COORDINATEUR_HOSPITALIER"))
                         .contentType(MediaType.APPLICATION_JSON).content(HOPITAL))
                 .andExpect(status().isCreated());
-        verify(service).creerHopital(any());
+        verify(etablissements).creerHopital(any());
     }
 
     @Test
@@ -60,7 +57,7 @@ class HopitalControllerTest {
 
     @Test
     void lectureParCitoyen200() throws Exception {
-        when(service.listerHopitaux()).thenReturn(List.of());
+        when(etablissements.listerHopitaux()).thenReturn(List.of());
 
         mvc.perform(get("/api/hospitals").with(as("CITOYEN"))).andExpect(status().isOk());
     }
