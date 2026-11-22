@@ -86,8 +86,12 @@ export class Profile {
   }
 
   protected async actualiser(): Promise<void> {
-    await this.auth.actualiserRoles();
-    this.toast.ok('Rôles actualisés');
+    try {
+      await this.auth.actualiserRoles();
+      this.toast.ok('Rôles actualisés');
+    } catch {
+      this.toast.danger("Impossible d'actualiser vos rôles. Déconnectez-vous puis reconnectez-vous.");
+    }
   }
 
   protected invalide(nom: keyof typeof this.form.controls): boolean {

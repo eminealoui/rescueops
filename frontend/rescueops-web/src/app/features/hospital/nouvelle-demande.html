@@ -30,6 +30,9 @@
       <span class="lbl">Position du patient <span class="facultatif">cliquez sur la carte</span></span>
       <span class="mono pos">{{ position() ? position()!.lat + ', ' + position()!.lon : 'Non renseignée : la distance ne comptera pas dans le score.' }}</span>
     </div>
+    @if (creee()) {
+      <p class="fige">Demande déjà créée pour cette mission : le besoin est figé. Choisissez un autre établissement ci-dessous, ou cliquez sur « Nouvelle » pour une autre mission.</p>
+    }
     <button type="submit" class="btn btn-primary" [disabled]="recherche()">
       {{ recherche() ? 'Recherche…' : 'Rechercher les établissements compatibles' }} <span class="arr">→</span>
     </button>

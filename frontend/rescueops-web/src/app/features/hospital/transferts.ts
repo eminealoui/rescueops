@@ -7,6 +7,7 @@ import { TransfertTiroir } from './transfert-tiroir';
 import { Countdown, StatutTag } from './ui/widgets';
 
 const RAFRAICHISSEMENT_MS = 15_000;
+const TAILLE = 25;
 
 /** Liste des demandes de transfert, filtrable par statut. Un clic ouvre le tiroir de traitement (?id=... dans l'URL). */
 @Component({
@@ -48,6 +49,15 @@ const RAFRAICHISSEMENT_MS = 15_000;
           </tbody>
         </table>
       </div>
+      @if (page() > 0 || liste().length === taille) {
+        <nav class="pagination" aria-label="Pages">
+          <span class="petit">Page {{ page() + 1 }} · les plus récentes d'abord</span>
+          <div>
+            <button type="button" class="btn btn-outline mini" [disabled]="page() === 0" (click)="allerA(page() - 1)">Précédente</button>
+            <button type="button" class="btn btn-outline mini" [disabled]="liste().length < taille" (click)="allerA(page() + 1)">Suivante</button>
+          </div>
+        </nav>
+      }
     </div>
 
     @if (ouvert(); as t) {
@@ -66,6 +76,9 @@ const RAFRAICHISSEMENT_MS = 15_000;
     .grav.crit { color: var(--danger); font-weight: 600; }
     .petit { font-size: 12px; color: var(--text-2); }
     .vide { text-align: center; color: var(--text-3); padding: 32px; }
+    .pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; flex-wrap: wrap; }
+    .pagination div { display: flex; gap: 6px; }
+    .mini { padding: 6px 12px; font-size: 12px; }
   `,
 })
 export class Transferts {
@@ -84,6 +97,8 @@ export class Transferts {
     { libelle: 'Admis', statut: 'ADMIS' },
   ];
   protected readonly statut = signal<StatutTransfert | null>(null);
+  protected readonly page = signal(0);
+  protected readonly taille = TAILLE;
   protected readonly liste = signal<Transfert[]>([]);
   protected readonly chargement = signal(false);
   protected readonly ouvert = signal<Transfert | null>(null);
@@ -105,6 +120,12 @@ export class Transferts {
 
   protected filtrer(s: StatutTransfert | null): void {
     this.statut.set(s);
+    this.page.set(0);
+    this.charger();
+  }
+
+  protected allerA(p: number): void {
+    this.page.set(Math.max(0, p));
     this.charger();
   }
 
@@ -124,7 +145,7 @@ export class Transferts {
 
   private charger(): void {
     this.chargement.set(true);
-    this.api.lister(this.statut()).subscribe({
+    this.api.lister(this.statut(), this.page(), TAILLE).subscribe({
       next: (l) => {
         this.liste.set(l);
         this.chargement.set(false);

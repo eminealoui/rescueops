@@ -93,6 +93,16 @@ describe('intercepteurs HTTP', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/acces-refuse');
   });
 
+  it("403 sur une action (écriture) : toast avec le detail, on reste sur la page", () => {
+    http.post('/api/transfers/1/cancel', null).subscribe({ error: () => {} });
+    ctrl.expectOne('/api/transfers/1/cancel').flush(
+      { status: 403, detail: "Seul le demandeur peut annuler cette demande." },
+      { status: 403, statusText: 'Forbidden' },
+    );
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(toast.toasts()[0]?.text).toBe('Seul le demandeur peut annuler cette demande.');
+  });
+
   it('un appel marqué ERREUR_GEREE ne déclenche pas de toast', () => {
     http.get('/api/users/me', { context: new HttpContext().set(ERREUR_GEREE, true) }).subscribe({ error: () => {} });
     ctrl.expectOne('/api/users/me').flush({ detail: 'x' }, { status: 409, statusText: 'Conflict' });

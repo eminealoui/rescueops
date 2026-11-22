@@ -48,7 +48,7 @@ export class NouvelleDemande {
   protected readonly recherche = signal(false);
   protected readonly reservation = signal(false);
   /** Demande déjà créée (si la réservation a échoué, on réessaie sur la même demande). */
-  private readonly creee = signal<Transfert | null>(null);
+  protected readonly creee = signal<Transfert | null>(null);
 
   protected readonly candidatChoisi = computed(() => this.candidats()?.find((c) => c.serviceId === this.choix()) ?? null);
   protected readonly points = computed<PointCarte[]>(() => {
@@ -71,6 +71,9 @@ export class NouvelleDemande {
     });
     // Changer le besoin invalide les résultats affichés.
     this.form.valueChanges.subscribe(() => this.candidats.set(null));
+    // Une fois la demande créée, le besoin est figé (une seule demande ouverte par mission) :
+    // pour un autre besoin, on repart d'une nouvelle mission.
+    effect(() => (this.creee() ? this.form.disable({ emitEvent: false }) : this.form.enable({ emitEvent: false })));
   }
 
   /** En attendant le module Interventions (MS4), une mission de démonstration est générée. */
@@ -80,6 +83,7 @@ export class NouvelleDemande {
   }
 
   protected placer(p: { lat: number; lon: number }): void {
+    if (this.creee()) return;
     this.position.set(p);
     this.candidats.set(null);
   }

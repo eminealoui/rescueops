@@ -43,7 +43,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           if (!auth.reconnecter(router.url)) toast.danger('Votre session n\'est pas reconnue par le serveur. Reconnectez-vous.');
           break;
         case 403:
-          void router.navigateByUrl('/acces-refuse');
+          // Lecture refusée : la page entière est inaccessible. Action refusée (règle métier, propriétaire...) :
+          // on reste sur la page et on explique pourquoi.
+          if (req.method === 'GET') void router.navigateByUrl('/acces-refuse');
+          else toast.danger(pb.detail || "Vous n'avez pas le droit d'effectuer cette action.");
           break;
         case 0:
         case 502:

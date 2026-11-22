@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -36,7 +36,9 @@ export class Capacites {
   protected readonly anime = signal(false);
   protected readonly maj = signal<Date | null>(null);
 
-  protected readonly villes = computed(() => [...new Set((this.donnees()?.services ?? []).map((s) => s.ville))].sort());
+  /** Toutes les villes connues (cumulées au fil des chargements) : la liste ne rétrécit pas quand un filtre est actif. */
+  private readonly villesConnues = signal<string[]>([]);
+  protected readonly villes = this.villesConnues.asReadonly();
 
   constructor() {
     this.charger();
@@ -54,6 +56,7 @@ export class Capacites {
     this.api.capacites({ etat: this.etat(), specialite: this.specialite(), ville: this.ville() || null }).subscribe((d) => {
       this.donnees.set(d);
       this.maj.set(new Date());
+      this.villesConnues.update((v) => [...new Set([...v, ...d.services.map((s) => s.ville)])].sort((a, b) => a.localeCompare(b, 'fr')));
     });
   }
 

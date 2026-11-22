@@ -1,7 +1,7 @@
 import { A11yModule } from '@angular/cdk/a11y';
 import { Dialog } from '@angular/cdk/dialog';
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { LIBELLES_GRAVITE, LIBELLES_SPECIALITE, LIBELLES_STATUT, Transfert, codeCourt } from '../../core/api/models';
@@ -32,6 +32,8 @@ export class TransfertTiroir {
   readonly modifie = output<Transfert>();
 
   protected readonly enCours = signal(false);
+  /** Horloge à la seconde : le bouton « Confirmer » disparaît dès l'expiration de la place retenue. */
+  private readonly maintenant = signal(Date.now());
   protected readonly libSpec = LIBELLES_SPECIALITE;
   protected readonly libGrav = LIBELLES_GRAVITE;
   protected readonly libStatut = LIBELLES_STATUT;
@@ -42,7 +44,7 @@ export class TransfertTiroir {
   protected readonly hopital = computed(() => (this.transfert().serviceId ? this.ref.parService().get(this.transfert().serviceId!) : undefined));
   protected readonly boutons = computed(() => {
     const t = this.transfert();
-    const expire = compteARebours(t.expireAt, Date.now())?.expire ?? false;
+    const expire = compteARebours(t.expireAt, this.maintenant())?.expire ?? false;
     return actionsDisponibles(t.statut, this.auth.roles(), expire);
   });
   protected readonly points = computed<PointCarte[]>(() => {
@@ -56,6 +58,8 @@ export class TransfertTiroir {
 
   constructor() {
     this.ref.charger();
+    const horloge = setInterval(() => this.maintenant.set(Date.now()), 1000);
+    inject(DestroyRef).onDestroy(() => clearInterval(horloge));
   }
 
   /** Échap ferme le tiroir, sauf si une boîte de confirmation est ouverte par-dessus (elle se ferme seule). */

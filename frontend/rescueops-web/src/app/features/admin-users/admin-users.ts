@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
+import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, filter, map, switchMap, tap } from 'rxjs';
 import { Page, UserProfile } from '../../core/api/models';
 import { RechercheUtilisateurs, UserApi } from '../../core/api/user.api';
 import { Confirm } from '../../core/ui/confirm';
@@ -47,7 +47,13 @@ export class AdminUsers {
         this.chargement.set(false);
       });
     this.recherche.valueChanges
-      .pipe(debounceTime(300), distinctUntilChanged(), filter((q) => q.length !== 1), takeUntilDestroyed(destroy))
+      .pipe(
+        debounceTime(300),
+        // Une seule lettre ne filtre pas (trop de résultats) : on la traite comme une recherche vide.
+        map((q) => (q.trim().length < 2 ? '' : q.trim())),
+        distinctUntilChanged(),
+        takeUntilDestroyed(destroy),
+      )
       .subscribe((query) => this.modifier({ query, page: 0 }));
     this.lancer();
   }

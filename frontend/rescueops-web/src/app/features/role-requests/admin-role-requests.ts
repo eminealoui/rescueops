@@ -47,6 +47,17 @@ import { ToastService } from '../../core/ui/toast.service';
         <div class="card vide">{{ chargement() ? 'Chargement…' : 'Aucune demande dans cette catégorie.' }}</div>
       }
     </div>
+    @if (page(); as p) {
+      @if (p.totalPages > 1) {
+        <nav class="pagination" aria-label="Pages">
+          <span>{{ p.totalElements }} demandes · page {{ p.page + 1 }} / {{ p.totalPages }}</span>
+          <div>
+            <button type="button" class="btn btn-outline" [disabled]="p.page === 0" (click)="allerA(p.page - 1)">Précédente</button>
+            <button type="button" class="btn btn-outline" [disabled]="p.page + 1 >= p.totalPages" (click)="allerA(p.page + 1)">Suivante</button>
+          </div>
+        </nav>
+      }
+    }
   `,
   styles: `
     .chips { display: flex; gap: 6px; margin: 20px 0 14px; flex-wrap: wrap; }
@@ -60,6 +71,9 @@ import { ToastService } from '../../core/ui/toast.service';
     .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
     .vide { color: var(--text-3); text-align: center; grid-column: 1 / -1; }
     .vide:hover { transform: none; }
+    .pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap;
+                  font-size: 12px; color: var(--text-2); }
+    .pagination div { display: flex; gap: 6px; }
   `,
 })
 export class AdminRoleRequests {
@@ -76,6 +90,7 @@ export class AdminRoleRequests {
 
   protected readonly statut = signal<StatutDemandeRole | null>('EN_ATTENTE');
   protected readonly page = signal<Page<DemandeRole> | null>(null);
+  private readonly numero = signal(0);
   protected readonly chargement = signal(false);
   protected readonly enCours = signal<string | null>(null);
 
@@ -85,6 +100,12 @@ export class AdminRoleRequests {
 
   protected choisir(s: StatutDemandeRole | null): void {
     this.statut.set(s);
+    this.numero.set(0);
+    this.charger();
+  }
+
+  protected allerA(n: number): void {
+    this.numero.set(Math.max(0, n));
     this.charger();
   }
 
@@ -128,7 +149,7 @@ export class AdminRoleRequests {
   private charger(): void {
     this.chargement.set(true);
     this.api
-      .demandes(this.statut())
+      .demandes(this.statut(), this.numero())
       .pipe(finalize(() => this.chargement.set(false)))
       .subscribe((p) => this.page.set(p));
   }

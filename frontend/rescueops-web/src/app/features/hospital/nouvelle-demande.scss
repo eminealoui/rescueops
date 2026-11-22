@@ -9,6 +9,7 @@
 .lbl { font-size: var(--fs-small); font-weight: 600; color: var(--text-2); }
 .pos { font-size: 12px; color: var(--text-2); }
 .panneau .btn-primary { justify-content: center; }
+.fige { font-size: 12.5px; color: var(--text); background: var(--warn-soft); border-radius: var(--radius-sm); padding: 10px 12px; }
 .carte { min-height: 380px; border-radius: var(--radius); border: 1px solid var(--line); }
 
 .resultats { margin-top: 22px; display: grid; gap: 8px; }
