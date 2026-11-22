@@ -34,6 +34,53 @@
 **Tout le socle (Keycloak, Gateway, Eureka, MySQL, RabbitMQ) est déjà prêt** et se lance avec une seule commande Docker.
 Ton travail : **coder la logique métier de ton microservice**. Ton squelette est déjà branché sur tout le reste.
 
+## L'application web (Angular) : une seule app pour toute l'équipe
+
+L'interface est **une seule application Angular**, dans [`frontend/rescueops-web`](../frontend/rescueops-web/README.md). Elle contient déjà :
+- la page d'accueil publique, la connexion et l'inscription (pages Keycloak aux couleurs de RescueOps) ;
+- la **coquille commune** : bandeau EN DIRECT, en-tête avec logo, onglets selon les rôles, mode clair ou sombre, menu du compte ;
+- le profil, les demandes de rôle et l'administration ;
+- le module 5 (Hôpitaux), **à prendre comme exemple** pour tes écrans.
+
+**Tu ne crées pas ta propre application** : tu ajoutes tes écrans dans celle-ci.
+
+### Lancer l'application
+
+Prérequis : Node 22, et le socle démarré (`docker compose -f docker-compose.infra.yml up -d`).
+
+```powershell
+cd frontend/rescueops-web
+npm install
+npm start
+```
+
+Ouvre http://localhost:4200. Comptes de démo : `admin@rescueops.test`, `operateur@rescueops.test`, `ambulancier@rescueops.test`… mot de passe `Demo1234!`.
+
+- Si `npm start` demande « use a different port? », réponds **n** : Keycloak n'accepte que le retour vers `localhost:4200`.
+- L'application appelle toujours `/api/...`, et `npm start` relaie vers la Gateway. Si le port 8080 est pris sur ton PC (Oracle, Tomcat…), mets `GATEWAY_HOST_PORT=8090` dans ton `.env`, puis relance la Gateway (`docker compose -f docker-compose.infra.yml up -d api-gateway`) et `npm start`. Choisis un port **libre et différent de ceux des microservices** (8081 à 8087).
+
+### Brancher les écrans de TON module (4 étapes)
+
+1. Crée ton dossier `src/app/features/<ton-module>/` avec un fichier `<ton-module>.routes.ts` (modèle : `features/hospital/hospital.routes.ts`).
+2. Dans `src/app/app.routes.ts`, ajoute ton bloc `loadChildren` dans les routes de la coquille, protégé par `roleGuard('TON_ROLE', ...)`.
+3. Dans `src/app/layout/navigation.ts`, remplace la ligne `/modules/msX` de ton module par ta route. Ton onglet apparaît alors pour les bons rôles.
+4. Crée ton client d'API dans `src/app/core/api/` (modèle : `hospital.api.ts`), avec des chemins `environment.apiBase + '/ta-ressource'`. **Jamais d'URL complète, jamais de port de microservice.**
+
+### Ce qui existe déjà : réutilise-le, ne le recode pas
+
+| Besoin | À utiliser |
+|---|---|
+| Couleurs, polices | les variables de `src/styles/tokens.css` (`var(--brand)`, `var(--ok)`…). Vert, ambre et rouge sont **réservés aux statuts** |
+| Boutons, cartes, étiquettes, filtres, champs | les classes `.btn .btn-primary .btn-outline`, `.card`, `.tag .tag-ok/.tag-warn/.tag-danger`, `.chip`, `.input .select .field` |
+| Message de succès | `ToastService` (`toast.ok('Enregistré')`) |
+| Confirmation avant une action irréversible | `Confirm` (`confirm.demander({ titre, texte, action })`) |
+| Erreurs HTTP | **rien à faire** : l'intercepteur affiche le message de l'API, gère 401, 403 et « service indisponible » |
+| Utilisateur connecté, rôles | `AuthService` (`auth.roles()`, `auth.hasRole('ADMIN')`, `auth.utilisateur()`) |
+| Carte | `<app-carte>` (Leaflet, tuiles OpenStreetMap gratuites) |
+| Logo | `<app-brand>`. Le fichier source est [design/logo.svg](design/logo.svg) |
+
+**Avant chaque Pull Request** : `npm test` et `npm run build` doivent passer, et ton écran doit rester lisible à 375 px de large et en mode sombre.
+
 ## Les documents de référence
 
 | Document | Pour quoi |

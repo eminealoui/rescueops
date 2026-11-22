@@ -15,7 +15,7 @@ npm start
 Ouvrir http://localhost:4200. Comptes de démonstration : `*@rescueops.test` / `Demo1234!` (voir le realm Keycloak).
 
 - L'application appelle **toujours** `/api/...` ; `ng serve` relaie vers la Gateway (`proxy.conf.mjs`).
-- Le port de la Gateway est lu dans le `.env` racine (`GATEWAY_HOST_PORT`, 8080 par défaut). Si 8080 est pris sur votre PC (Oracle, Tomcat…), mettez par exemple `GATEWAY_HOST_PORT=8081` dans `.env`, puis relancez la Gateway et `npm start`.
+- Le port de la Gateway est lu dans le `.env` racine (`GATEWAY_HOST_PORT`, 8080 par défaut). Si 8080 est pris sur votre PC (Oracle, Tomcat…), mettez par exemple `GATEWAY_HOST_PORT=8090` dans `.env` (un port libre, différent de ceux des microservices 8081 à 8087), puis relancez la Gateway et `npm start`.
 - Tests : `npm test`. Build : `npm run build`.
 
 ## Ajouter les écrans de VOTRE module
