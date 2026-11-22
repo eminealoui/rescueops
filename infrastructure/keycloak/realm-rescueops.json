@@ -1,6 +1,8 @@
 {
   "realm": "rescueops",
   "displayName": "RescueOps",
+  "loginTheme": "rescueops",
+  "attributes": { "darkMode": "false" },
   "enabled": true,
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,

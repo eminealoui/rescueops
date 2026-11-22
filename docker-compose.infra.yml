@@ -54,6 +54,8 @@ services:
       - keycloak-data:/opt/keycloak/data
       # Import au premier démarrage uniquement (un realm existant n'est pas écrasé).
       - ./infrastructure/keycloak/realm-rescueops.json:/opt/keycloak/data/import/realm-rescueops.json:ro
+      # Thème des pages de connexion et d'inscription aux couleurs de RescueOps (modifiable à chaud en start-dev).
+      - ./infrastructure/keycloak/themes/rescueops:/opt/keycloak/themes/rescueops:ro
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
       interval: 10s

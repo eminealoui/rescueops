@@ -1,0 +1,297 @@
+/* =====================================================================
+   RescueOps : pages Keycloak aux couleurs de l'application.
+   Mêmes valeurs que docs/design/tokens.css (bleu pétrole, crème, IBM Plex).
+   Mise en page : une carte en deux volets, bandeau bleu pétrole + formulaire.
+   ===================================================================== */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --ro-bg: #f2f0eb;
+  --ro-surface: #ffffff;
+  --ro-surface-2: #f7f6f2;
+  --ro-line: #e4e1d8;
+  --ro-line-2: #d3cfc4;
+  --ro-text: #111418;
+  --ro-text-2: #4a5250;
+  --ro-text-3: #8a9490;
+  --ro-brand-deep: #0b2f40;
+  --ro-brand: #17698a;
+  --ro-brand-soft: #e1edf2;
+  --ro-brand-on: #8fd3ec;
+  --ro-danger: #c8331f;
+  --ro-danger-soft: #f8e1dc;
+  --ro-ok: #1e7a52;
+  --ro-ok-soft: #e4efe8;
+  --ro-warn-soft: #fbf0cc;
+  --ro-ease: cubic-bezier(.2, .8, .2, 1);
+
+  /* Variables PatternFly 5 utilisées par le thème keycloak.v2 */
+  --pf-v5-global--FontFamily--text: "IBM Plex Sans", system-ui, sans-serif;
+  --pf-v5-global--FontFamily--heading: "IBM Plex Sans", system-ui, sans-serif;
+  --pf-v5-global--primary-color--100: var(--ro-brand-deep);
+  --pf-v5-global--primary-color--200: #082230;
+  --pf-v5-global--link--Color: var(--ro-brand);
+  --pf-v5-global--link--Color--hover: var(--ro-brand-deep);
+  --pf-v5-global--Color--100: var(--ro-text);
+  --pf-v5-global--Color--200: var(--ro-text-2);
+  --pf-v5-global--BorderColor--100: var(--ro-line-2);
+  --pf-v5-global--danger-color--100: var(--ro-danger);
+}
+
+html, body#keycloak-bg {
+  background: var(--ro-bg) !important;
+  background-image: none !important;
+  color: var(--ro-text);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+/* ---------- mise en page : carte en deux volets ---------- */
+.pf-v5-c-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(23, 105, 138, .10), transparent 40%),
+    radial-gradient(circle at 88% 92%, rgba(11, 47, 64, .08), transparent 45%);
+}
+
+.pf-v5-c-login__container {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.15fr);
+  grid-template-areas: "header main";
+  width: 100%;
+  max-width: 1040px;
+  padding: 0 !important;
+  margin: 0 auto;
+  background: var(--ro-surface);
+  border: 1px solid var(--ro-line);
+  border-radius: 22px;
+  /* clip (et non hidden) : le champ qui prend le focus ne peut pas faire défiler la carte de côté */
+  overflow: clip;
+  box-shadow: 0 30px 60px -20px rgba(11, 47, 64, .35);
+  animation: ro-rise .6s var(--ro-ease) both;
+}
+@keyframes ro-rise { from { opacity: 0; transform: translateY(14px); } }
+
+/* ---------- volet gauche : marque et accroche ---------- */
+#kc-header.pf-v5-c-login__header {
+  grid-area: header;
+  position: relative;
+  margin: 0 !important;
+  padding: 48px 40px !important;
+  background: var(--ro-brand-deep);
+  color: #fdfcf0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 560px;
+  overflow: clip;
+}
+#kc-header::before {
+  content: "";
+  position: absolute;
+  width: 460px;
+  height: 460px;
+  left: -180px;
+  top: -200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(143, 211, 236, .18), transparent 65%);
+}
+/* Accroche de l'application, sous le logo */
+#kc-header::after {
+  content: "Chaque seconde compte.\A Chaque acteur aussi.";
+  white-space: pre-line;
+  position: relative;
+  font-size: 34px;
+  font-weight: 300;
+  letter-spacing: -.8px;
+  line-height: 1.12;
+  color: #fdfcf0;
+}
+
+/* Logo : losange rayé jaune et bleu clair + nom */
+#kc-header-wrapper.pf-v5-c-brand {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -.2px;
+  text-transform: none;
+  color: #fff;
+  padding: 0;
+  white-space: nowrap;
+}
+#kc-header-wrapper.pf-v5-c-brand::before {
+  content: "";
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  flex: none;
+  background: rgba(255, 255, 255, .1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+}
+#kc-header-wrapper.pf-v5-c-brand::after {
+  content: "";
+  position: absolute;
+  left: 10.5px;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+  transform: translateY(-50%) rotate(45deg);
+  background: repeating-linear-gradient(135deg, #f2c230 0 3px, var(--ro-brand-on) 3px 6px);
+}
+
+/* ---------- volet droit : formulaire ---------- */
+.pf-v5-c-login__main {
+  grid-area: main;
+  margin: 0 !important;
+  padding: 44px 48px 36px;
+  background: var(--ro-surface);
+  box-shadow: none !important;
+  border: 0 !important;
+  max-width: none !important;
+  width: 100%;
+}
+.pf-v5-c-login__main-header {
+  padding: 0 0 22px !important;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 0 !important;
+}
+#kc-page-title.pf-v5-c-title {
+  font-size: 28px !important;
+  font-weight: 300;
+  letter-spacing: -.6px;
+  line-height: 1.15;
+  color: var(--ro-text);
+}
+#kc-page-title.pf-v5-c-title::before {
+  content: "Espace sécurisé";
+  display: block;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: var(--ro-brand);
+}
+.pf-v5-c-login__main-body { padding: 0 !important; }
+.pf-v5-c-login__main-footer { padding: 18px 0 0 !important; }
+
+/* Sélecteur de langue discret */
+.pf-v5-c-login__main-header-utilities .pf-v5-c-form-control {
+  --pf-v5-c-form-control--BackgroundColor: var(--ro-surface-2);
+  border-radius: 999px;
+  font-size: 12.5px;
+  min-width: 120px;
+}
+
+/* ---------- champs ---------- */
+.pf-v5-c-form { gap: 16px; }
+.pf-v5-c-form__label-text { font-size: 12.5px; font-weight: 600; color: var(--ro-text-2); }
+.pf-v5-c-form__label-required { color: var(--ro-danger); }
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--BackgroundColor: var(--ro-surface);
+  --pf-v5-c-form-control--before--BorderColor: var(--ro-line-2);
+  --pf-v5-c-form-control--after--BorderColor: transparent;
+  --pf-v5-c-form-control--hover--after--BorderBottomColor: var(--ro-brand);
+  --pf-v5-c-form-control--focus--after--BorderBottomColor: var(--ro-brand);
+  border-radius: 8px;
+  transition: box-shadow .15s ease;
+}
+.pf-v5-c-form-control::before { border-radius: 8px; }
+.pf-v5-c-form-control::after { border-radius: 8px; }
+.pf-v5-c-form-control:focus-within {
+  box-shadow: 0 0 0 3px var(--ro-brand-soft);
+}
+.pf-v5-c-form-control:focus-within::before { border-color: var(--ro-brand); }
+.pf-v5-c-form-control > input,
+.pf-v5-c-form-control > select {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  color: var(--ro-text);
+}
+.pf-v5-c-input-group { gap: 0; }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
+  border-radius: 0 8px 8px 0;
+  background: var(--ro-surface-2);
+  color: var(--ro-text-2);
+}
+.pf-v5-c-input-group__item.pf-m-fill .pf-v5-c-form-control,
+.pf-v5-c-input-group__item.pf-m-fill .pf-v5-c-form-control::before {
+  border-radius: 8px 0 0 8px;
+}
+.pf-v5-c-check__label { font-size: 13px; color: var(--ro-text-2); }
+.pf-v5-c-check__input { accent-color: var(--ro-brand-deep); }
+
+/* ---------- boutons : pilules de l'application ---------- */
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--BackgroundColor: var(--ro-brand-deep);
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--ro-brand-deep);
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--ro-brand-deep);
+  --pf-v5-c-button--m-primary--active--BackgroundColor: #082230;
+  border-radius: 999px !important;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 20px;
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.pf-v5-c-button.pf-m-primary::after { border-radius: 999px !important; }
+.pf-v5-c-button.pf-m-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -8px rgba(11, 47, 64, .55);
+}
+.pf-v5-c-button.pf-m-secondary, .pf-v5-c-button.pf-m-link {
+  border-radius: 999px !important;
+  color: var(--ro-brand-deep);
+}
+.pf-v5-c-form__actions { margin-top: 6px; }
+
+/* ---------- liens et pied ---------- */
+a, .pf-v5-c-button.pf-m-link { color: var(--ro-brand); font-weight: 500; }
+a:hover { color: var(--ro-brand-deep); }
+.pf-v5-c-login__main-footer-band {
+  border-top: 1px solid var(--ro-line) !important;
+  background: transparent !important;
+  padding: 18px 0 0 !important;
+  font-size: 13.5px;
+  color: var(--ro-text-2);
+  text-align: center;
+}
+#kc-registration a, #kc-info a { font-weight: 600; }
+
+/* ---------- messages (erreurs, succès, informations) ---------- */
+.pf-v5-c-alert {
+  border-radius: 10px;
+  border: 0;
+  box-shadow: none;
+  font-size: 13px;
+}
+.pf-v5-c-alert.pf-m-danger, .pf-v5-c-alert.pf-m-error { background: var(--ro-danger-soft); color: var(--ro-danger); }
+.pf-v5-c-alert.pf-m-success { background: var(--ro-ok-soft); color: var(--ro-ok); }
+.pf-v5-c-alert.pf-m-warning, .pf-v5-c-alert.pf-m-info { background: var(--ro-warn-soft); color: var(--ro-text); }
+.pf-v5-c-helper-text__item.pf-m-error, .kc-feedback-text { color: var(--ro-danger); }
+
+/* ---------- petits écrans : le bandeau passe au-dessus ---------- */
+@media (max-width: 820px) {
+  .pf-v5-c-login { padding: 16px; place-items: start center; }
+  .pf-v5-c-login__container {
+    grid-template-columns: 1fr;
+    grid-template-areas: "header" "main";
+    border-radius: 18px;
+  }
+  #kc-header.pf-v5-c-login__header { min-height: 0; padding: 26px 24px !important; gap: 18px; }
+  #kc-header::after { font-size: 24px; }
+  .pf-v5-c-login__main { padding: 32px 22px 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
