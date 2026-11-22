@@ -1,0 +1,102 @@
+<div class="eyebrow">Mon compte</div>
+<h1 class="page-title">Mon <em>profil</em></h1>
+<p class="page-sub">Vos coordonnées, et les rôles qui vous ouvrent les modules de RescueOps.</p>
+
+<div class="grille">
+  <form class="card bloc" [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
+    <h2>Coordonnées</h2>
+    @if (profil(); as p) {
+      <div class="identite mono">{{ p.email }} · inscrit le {{ p.createdAt | date: 'longDate' }}</div>
+    }
+    <div class="deux">
+      <div class="field">
+        <label for="firstName">Prénom</label>
+        <input id="firstName" class="input" formControlName="firstName" autocomplete="given-name" [class.invalid]="invalide('firstName')"
+               [attr.aria-invalid]="invalide('firstName')" aria-describedby="err-firstName" />
+        @if (invalide('firstName')) { <span id="err-firstName" class="field-error">Le prénom est obligatoire.</span> }
+      </div>
+      <div class="field">
+        <label for="lastName">Nom</label>
+        <input id="lastName" class="input" formControlName="lastName" autocomplete="family-name" [class.invalid]="invalide('lastName')"
+               [attr.aria-invalid]="invalide('lastName')" aria-describedby="err-lastName" />
+        @if (invalide('lastName')) { <span id="err-lastName" class="field-error">Le nom est obligatoire.</span> }
+      </div>
+    </div>
+    <div class="field">
+      <label for="phone">Téléphone <span class="facultatif">facultatif</span></label>
+      <input id="phone" class="input" formControlName="phone" inputmode="tel" autocomplete="tel" placeholder="+216 98 123 456"
+             [class.invalid]="invalide('phone')" [attr.aria-invalid]="invalide('phone')" aria-describedby="err-phone" />
+      @if (invalide('phone')) { <span id="err-phone" class="field-error">Format international attendu, par exemple +21698123456.</span> }
+    </div>
+    <div class="field">
+      <label for="address">Adresse <span class="facultatif">facultatif</span></label>
+      <input id="address" class="input" formControlName="address" autocomplete="street-address" />
+    </div>
+    <div class="actions">
+      <button type="button" class="btn btn-outline" (click)="annulerModifs()" [disabled]="form.pristine || enregistrement()">Annuler</button>
+      <button type="submit" class="btn btn-primary" [disabled]="form.pristine || enregistrement()">
+        {{ enregistrement() ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </div>
+  </form>
+
+  <section class="card bloc">
+    <h2>Mes rôles</h2>
+    <div class="roles">
+      @for (r of auth.roles(); track r) { <span class="tag tag-role">{{ libellesRole[r] }}</span> }
+    </div>
+    @if (profil()?.organisation; as org) { <p class="aide">Organisation : <b>{{ org }}</b></p> }
+
+    @if (roleAccordeNonVisible()) {
+      <div class="encart encart-ok">
+        <span>Un rôle vous a été accordé.</span>
+        <button type="button" class="btn btn-primary" (click)="actualiser()">Activer maintenant</button>
+      </div>
+    }
+
+    @if (enAttente(); as d) {
+      <div class="encart">
+        <span class="tag tag-warn">EN ATTENTE</span>
+        <span>Votre demande de rôle <b>{{ libellesRole[d.roleDemande] }}</b> ({{ d.organisation }}) est en cours d'examen.</span>
+      </div>
+    } @else if (rolesPossibles().length) {
+      <form [formGroup]="demandeForm" (ngSubmit)="demanderRole()" class="demande" novalidate>
+        <h3>Demander un rôle professionnel</h3>
+        <p class="aide">Un administrateur vérifie votre demande avant d'accorder le rôle.</p>
+        <div class="field">
+          <label for="role">Rôle souhaité</label>
+          <select id="role" class="select" formControlName="role">
+            <option [ngValue]="null" disabled>Choisir un rôle</option>
+            @for (r of rolesPossibles(); track r) { <option [ngValue]="r">{{ libellesRole[r] }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label for="organisation">Organisation</label>
+          <input id="organisation" class="input" formControlName="organisation" placeholder="Ex. SAMU Tunis, CHU La Rabta"
+                 [class.invalid]="demandeForm.controls.organisation.invalid && demandeForm.controls.organisation.touched" />
+        </div>
+        <div class="field">
+          <label for="motif">Motif <span class="facultatif">facultatif</span></label>
+          <textarea id="motif" class="textarea" rows="3" formControlName="motif" maxlength="500" placeholder="Fonction, numéro de badge…"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" [disabled]="envoi()">{{ envoi() ? 'Envoi…' : 'Envoyer la demande' }}</button>
+      </form>
+    }
+
+    @if (demandes().length) {
+      <h3 class="hist-titre">Historique de mes demandes</h3>
+      <ul class="hist">
+        @for (d of demandes(); track d.id) {
+          <li>
+            <span><b>{{ libellesRole[d.roleDemande] }}</b> · {{ d.organisation }}</span>
+            <span class="tag" [class.tag-ok]="d.statut === 'ACCEPTEE'" [class.tag-danger]="d.statut === 'REFUSEE'" [class.tag-warn]="d.statut === 'EN_ATTENTE'">
+              {{ libellesStatut[d.statut] }}
+            </span>
+            <span class="date mono">{{ d.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            @if (d.motifRefus) { <span class="refus">Motif du refus : {{ d.motifRefus }}</span> }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</div>

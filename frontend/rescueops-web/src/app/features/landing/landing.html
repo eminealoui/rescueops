@@ -1,0 +1,164 @@
+<app-ticker [items]="ticker" note="données de démonstration" />
+
+<header class="hd-bar">
+  <div class="wrap hd">
+    <app-brand />
+    <nav class="links" aria-label="Sections de la page">
+      <button type="button" (click)="defiler('parcours')">Le parcours</button>
+      <button type="button" (click)="defiler('modules')">Modules</button>
+      <button type="button" (click)="defiler('roles')">Pour qui ?</button>
+    </nav>
+    <div class="right">
+      <app-theme-toggle />
+      <button type="button" class="btn btn-outline connexion" (click)="auth.login()">Se connecter</button>
+      <button type="button" class="btn btn-primary" (click)="auth.register()">Créer un compte <span class="arr">→</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero rise">
+    <div class="hl">
+      <div class="eyebrow">Plateforme de coordination des urgences</div>
+      <h1>Chaque seconde compte. <em>Chaque acteur aussi.</em></h1>
+      <p>RescueOps relie citoyens, régulateurs, ambulanciers et hôpitaux sur une seule plateforme : du signalement d'un incident jusqu'à l'admission du patient.</p>
+      <div class="cta">
+        <button type="button" class="btn btn-light" (click)="auth.register()">Créer un compte <span class="arr">→</span></button>
+        <button type="button" class="btn btn-ghost" (click)="auth.login()">Se connecter</button>
+      </div>
+      <div class="trust"><span>Accès sécurisé Keycloak</span><span>Rôles et permissions</span><span>Traçabilité complète</span></div>
+    </div>
+
+    <div class="hr" aria-hidden="true">
+      <svg viewBox="0 0 520 470" preserveAspectRatio="xMidYMid slice">
+        <rect width="520" height="470" fill="var(--map-bg)" />
+        <g fill="none" stroke="var(--map-line)">
+          <path d="M-10 60 C120 30 220 110 360 70 S520 40 540 80" /><path d="M-10 110 C130 80 230 160 370 120 S520 90 540 130" />
+          <path d="M-10 160 C140 130 240 210 380 170 S520 140 540 180" /><path d="M-10 210 C150 180 250 260 390 220 S520 190 540 230" />
+          <path d="M-10 260 C160 230 260 310 400 270 S520 240 540 280" />
+        </g>
+        <path d="M0 380 Q150 340 280 370 T520 350 L520 470 L0 470Z" fill="var(--map-water)" />
+        <g stroke="var(--map-road)" stroke-width="5" fill="none" stroke-linecap="round">
+          <path d="M40 470 L170 250 L330 230 L500 90" /><path d="M0 300 L520 320" /><path d="M170 250 L120 120" />
+        </g>
+        <path #trajet class="route" d="M120 120 L170 250 L330 230" stroke="var(--brand)" stroke-width="3" fill="none" />
+        <circle class="ring" cx="120" cy="120" r="10" fill="var(--danger)" fill-opacity=".35" /><circle cx="120" cy="120" r="7" fill="var(--danger)" />
+        <circle class="ring ring-2" cx="330" cy="230" r="10" fill="var(--ok)" fill-opacity=".35" /><circle cx="330" cy="230" r="7" fill="var(--ok)" />
+        <circle cx="430" cy="150" r="6" fill="var(--warn)" /><circle cx="250" cy="330" r="6" fill="var(--ok)" />
+        <g #ambulance transform="translate(120,120)">
+          <circle r="9" fill="var(--brand-deep)" stroke="#fff" stroke-width="2" />
+          <text y="4" text-anchor="middle" font-size="10" fill="#fff">✚</text>
+        </g>
+      </svg>
+      <div class="float f1">
+        <span class="tag tag-danger">CRITIQUE</span>
+        <div class="f-titre">Incident signalé · Bab Saadoun</div>
+        <div class="mono f-meta">INC-2291 · il y a 2 min</div>
+      </div>
+      <div class="float f3"><span class="tag tag-warn">AMB-07 EN ROUTE</span></div>
+      <div class="float f2">
+        <div class="f-ligne"><b>Habib Thameur</b><span class="num f-score">92</span></div>
+        <div class="mono f-meta">Trauma · 6 places · 4,1 km</div>
+        <div class="f-tag"><span class="tag tag-ok">PLACE RETENUE · 14:21</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="band" appReveal (visible)="lancerCompteurs()">
+    @for (c of chiffres; track c.libelle; let i = $index) {
+      <div>
+        <div class="num">{{ compteurs()[i] }}@if (c.suffixe) {<span class="suffixe">{{ c.suffixe }}</span>}</div>
+        <small>{{ c.libelle }}</small>
+      </div>
+    }
+  </div>
+
+  <section id="parcours">
+    <div class="st" appReveal>
+      <div><div class="eyebrow">Le parcours</div><h2>De l'alerte à l'admission, <em>sans perdre une seconde</em>.</h2></div>
+      <p class="st-aide">Cliquez sur une étape, ou laissez défiler.</p>
+    </div>
+    <div class="flow" appReveal>
+      <div class="steps" role="tablist" aria-label="Étapes du parcours">
+        @for (s of etapes; track s.titre; let i = $index) {
+          <button type="button" class="step" role="tab" [class.on]="i === etape()" [attr.aria-selected]="i === etape()"
+                  [attr.aria-controls]="'pane-' + i" (click)="choisirEtape(i)">
+            <span class="n">{{ i + 1 }}</span>
+            <span class="txt"><b>{{ s.titre }}</b><span>{{ s.resume }}</span></span>
+            @if (i === etape()) {
+              @for (c of [cycle()]; track c) { <span class="bar"></span> }
+            }
+          </button>
+        }
+      </div>
+      <div class="screen">
+        @for (s of etapes; track s.titre; let i = $index) {
+          <div class="pane" role="tabpanel" [id]="'pane-' + i" [class.on]="i === etape()" [attr.aria-hidden]="i !== etape()">
+            <div class="eyebrow">Étape {{ i + 1 }} · {{ s.titre }}</div>
+            <h3>{{ s.accroche }}</h3>
+            <p>{{ s.detail }}</p>
+            <div class="mini">
+              @for (l of s.lignes; track l.texte) {
+                <div class="mrow">
+                  <span>{{ l.texte }}</span>
+                  @if (l.tag) { <span class="tag" [class]="'tag tag-' + l.tag.ton">{{ l.tag.texte }}</span> }
+                  @if (l.score) { <span class="score num" [class.score-warn]="l.score.ton === 'warn'">{{ l.score.valeur }}</span> }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section id="modules">
+    <div class="st" appReveal>
+      <div><div class="eyebrow">Six modules, une plateforme</div><h2>Chaque domaine possède <em>ses données</em>, tous parlent la même langue.</h2></div>
+    </div>
+    <div class="mods">
+      @for (m of modules; track m.code; let i = $index) {
+        <article class="mod" [appReveal]="i * 0.06">
+          <div class="ic" aria-hidden="true">{{ m.icone }}</div>
+          <div class="k">{{ m.code }}</div>
+          <h3>{{ m.titre }}</h3>
+          <p>{{ m.texte }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section id="roles">
+    <div class="st" appReveal>
+      <div><div class="eyebrow">Pour qui ?</div><h2>Un espace adapté à <em>chaque rôle</em>.</h2></div>
+      <p class="st-aide">L'inscription crée un compte citoyen. Les rôles professionnels se demandent ensuite depuis votre profil, et un administrateur les valide.</p>
+    </div>
+    <div class="chips" appReveal role="tablist" aria-label="Profils">
+      @for (p of profils; track p.nom; let i = $index) {
+        <button type="button" class="chip" role="tab" [class.on]="i === profil()" [attr.aria-selected]="i === profil()" (click)="profil.set(i)">{{ p.nom }}</button>
+      }
+    </div>
+    @let p = profils[profil()];
+    <div class="rolebox" appReveal role="tabpanel">
+      @for (k of [profil()]; track k) {
+        <div class="fade"><div class="eyebrow">{{ p.nom }}</div><h3>{{ p.devise }}</h3></div>
+        <ul class="fade">
+          @for (a of p.actions; track a) { <li>{{ a }}</li> }
+        </ul>
+      }
+    </div>
+  </section>
+
+  <div class="final" appReveal>
+    <h2>Prêt à rejoindre la <em>coordination</em> ?</h2>
+    <div class="cta">
+      <button type="button" class="btn btn-light" (click)="auth.register()">Créer un compte <span class="arr">→</span></button>
+      <button type="button" class="btn btn-ghost" (click)="auth.login()">Se connecter</button>
+    </div>
+  </div>
+
+  <footer>
+    <span>RescueOps · projet académique AWD · données entièrement fictives</span>
+    <span class="mono">Angular · Spring Boot · Keycloak · MySQL · RabbitMQ</span>
+  </footer>
+</main>

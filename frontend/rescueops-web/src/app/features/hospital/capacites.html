@@ -1,0 +1,73 @@
+<section class="hero rise">
+  <div class="eyebrow">Module 05 · Coordination hospitalière</div>
+  <h1>Chaque patient, <em>la bonne place</em>, au bon moment.</h1>
+  <p>Capacités en temps réel, établissements compatibles et réservations temporaires sans double affectation.</p>
+  @let k = donnees()?.kpis;
+  <div class="band">
+    <div><div class="k">Voir</div><div class="num">{{ k?.placesLibres ?? '–' }}</div><div class="s">places libres</div></div>
+    <div><div class="k">Anticiper</div><div class="num warn">{{ k?.reservationsActives ?? '–' }}</div><div class="s">places retenues en cours</div></div>
+    <div><div class="k">Coordonner</div><div class="num bad">{{ k?.servicesSatures ?? '–' }}</div><div class="s">services saturés</div></div>
+    <div>
+      <div class="k">Agir</div>
+      <div class="num">{{ k?.tauxAcceptation24h ?? '–' }}@if (k?.tauxAcceptation24h !== null && k) {<span class="pct">%</span>}</div>
+      <div class="s">transferts acceptés · 24 h</div>
+    </div>
+  </div>
+</section>
+
+<div class="row rise">
+  <div>
+    <div class="eyebrow">Vue temps réel</div>
+    <h2>Services hospitaliers</h2>
+    @if (maj(); as m) { <span class="maj mono">Mis à jour à {{ m | date: 'HH:mm:ss' }}</span> }
+  </div>
+  <div class="filtres">
+    <select class="select" aria-label="Spécialité" [ngModel]="specialite()" (ngModelChange)="specialite.set($event); charger()">
+      <option [ngValue]="null">Toutes spécialités</option>
+      @for (s of specialites; track s) { <option [ngValue]="s">{{ libelles[s] }}</option> }
+    </select>
+    <select class="select" aria-label="Ville" [ngModel]="ville()" (ngModelChange)="ville.set($event); charger()">
+      <option value="">Toutes villes</option>
+      @for (v of villes(); track v) { <option [value]="v">{{ v }}</option> }
+    </select>
+    <div class="chips" role="group" aria-label="Filtrer par état">
+      @for (f of filtres; track f.libelle) {
+        <button type="button" class="chip" [class.on]="etat() === f.etat" (click)="choisirEtat(f.etat)">{{ f.libelle }}</button>
+      }
+    </div>
+  </div>
+</div>
+
+<section class="cards">
+  @for (s of donnees()?.services ?? []; track s.serviceId; let i = $index) {
+    <article class="card svc rise" [style.animation-delay.s]="0.03 * i">
+      <div class="h">
+        <div>
+          <div class="name">{{ s.hopitalNom }}</div>
+          <div class="sv">{{ libelles[s.specialite] }} · {{ s.ville }}</div>
+        </div>
+        @switch (s.etat) {
+          @case ('SATURE') { <span class="tag tag-danger">SATURÉ</span> }
+          @case ('RESERVE') { <span class="tag tag-warn">RÉSERVÉ</span> }
+          @default { <span class="tag tag-ok">DISPONIBLE</span> }
+        }
+      </div>
+      <div class="meter">
+        <div><span class="num big" [class.c-bad]="s.placesDisponibles === 0">{{ s.placesDisponibles }}</span> <span class="of">/ {{ s.capaciteTotale }} places libres</span></div>
+        <span class="of">{{ occupation(s.placesDisponibles, s.capaciteTotale) }} % occupé</span>
+      </div>
+      <div class="bar" role="meter" [attr.aria-valuenow]="occupation(s.placesDisponibles, s.capaciteTotale)" aria-valuemin="0" aria-valuemax="100"
+           aria-label="Taux d'occupation">
+        <i [class]="'b-' + s.etat" [style.width.%]="anime() ? occupation(s.placesDisponibles, s.capaciteTotale) : 0"></i>
+      </div>
+      <div class="foot">
+        <span>{{ s.placesRetenues }} place{{ s.placesRetenues > 1 ? 's' : '' }} retenue{{ s.placesRetenues > 1 ? 's' : '' }}</span>
+        @if (auth.hasAnyRole(['OPERATEUR', 'AMBULANCIER', 'ADMIN']) && s.placesDisponibles > 0) {
+          <a routerLink="../nouvelle-demande" [queryParams]="{ specialite: s.specialite }" class="lien">Demander un transfert →</a>
+        }
+      </div>
+    </article>
+  } @empty {
+    <div class="card vide">Aucun service ne correspond à ces filtres.</div>
+  }
+</section>

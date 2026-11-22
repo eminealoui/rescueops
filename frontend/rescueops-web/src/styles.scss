@@ -1,0 +1,55 @@
+/* Base globale. Les couleurs viennent TOUJOURS de styles/tokens.css (var(--...)). */
+*, *::before, *::after { box-sizing: border-box; }
+h1, h2, h3, h4, p, ul { margin: 0; }
+a { color: inherit; text-decoration: none; }
+em { font-style: italic; font-weight: 600; }
+button { font: inherit; }
+html { scroll-behavior: smooth; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+@media (max-width: 560px) { .wrap { padding: 0 16px; } }
+
+/* Variantes de boutons pilule utilisées sur fond foncé (héro, appel final) */
+.btn { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; text-decoration: none; }
+.btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-light { background: #fff; color: var(--brand-deep); }
+.btn-ghost { background: transparent; color: #fff; border: .8px solid rgba(255, 255, 255, .5); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn .arr { transition: transform var(--t-fast) ease; }
+.btn:hover .arr { transform: translateX(3px); }
+
+/* Focus visible au clavier, partout */
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+/* Titres de page */
+.page-title { font-size: var(--fs-h1); font-weight: 300; letter-spacing: -.8px; line-height: 1.15; margin: 6px 0 4px; }
+.page-sub { color: var(--text-2); }
+
+/* Formulaires */
+.field { display: grid; gap: 6px; }
+.field label { font-size: var(--fs-small); font-weight: 600; color: var(--text-2); }
+.input, .select, .textarea {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm); padding: 9px 12px; transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease;
+}
+.input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.input.invalid { border-color: var(--danger); }
+.field-error { color: var(--danger); font-size: var(--fs-small); }
+
+/* Tableaux */
+.table { width: 100%; border-collapse: collapse; background: var(--surface); }
+.table th { text-align: left; font-size: var(--fs-eyebrow); letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-3);
+            background: var(--surface-2); padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.table td { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.table tr:hover td { background: var(--surface-2); }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Fond des boîtes de dialogue (CDK) */
+.dlg-fond { background: rgba(11, 20, 25, .45); backdrop-filter: blur(2px); }
+
+/* Carte Leaflet en mode sombre : tuiles OpenStreetMap inversées, attribution aux couleurs du thème */
+.tuiles-sombres { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6); }
+.leaflet-container { font-family: var(--font-ui); background: var(--map-bg); }
+[data-theme="dark"] .leaflet-control-attribution { background: rgba(20, 26, 23, .8); color: var(--text-2); }
+[data-theme="dark"] .leaflet-control-attribution a { color: var(--brand); }

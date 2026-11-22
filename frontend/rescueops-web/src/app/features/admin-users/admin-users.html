@@ -1,0 +1,66 @@
+<div class="entete">
+  <div>
+    <div class="eyebrow">Administration</div>
+    <h1 class="page-title">Utilisateurs</h1>
+    <p class="page-sub">Comptes RescueOps. Les rôles se gèrent par les <a class="lien" routerLink="/admin/demandes-role">demandes de rôle</a>.</p>
+  </div>
+</div>
+
+<div class="outils">
+  <div class="field recherche">
+    <label for="q" class="sr-only">Rechercher</label>
+    <input id="q" class="input" type="search" [formControl]="recherche" placeholder="Rechercher un nom ou un e-mail" autocomplete="off" />
+  </div>
+  <div class="chips" role="group" aria-label="Filtrer par statut">
+    <button type="button" class="chip" [class.on]="etat().active === null" (click)="filtrer(null)">Tous</button>
+    <button type="button" class="chip" [class.on]="etat().active === true" (click)="filtrer(true)">Actifs</button>
+    <button type="button" class="chip" [class.on]="etat().active === false" (click)="filtrer(false)">Inactifs</button>
+  </div>
+</div>
+
+<div class="card tableau" [class.charge]="chargement()">
+  <div class="scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th [attr.aria-sort]="tri('lastName')"><button type="button" class="th" (click)="trier('lastName')">Nom <span class="fl">{{ tri('lastName') === 'descending' ? '↓' : '↑' }}</span></button></th>
+          <th [attr.aria-sort]="tri('email')"><button type="button" class="th" (click)="trier('email')">E-mail <span class="fl">{{ tri('email') === 'descending' ? '↓' : '↑' }}</span></button></th>
+          <th>Organisation</th>
+          <th [attr.aria-sort]="tri('createdAt')"><button type="button" class="th" (click)="trier('createdAt')">Inscription <span class="fl">{{ tri('createdAt') === 'descending' ? '↓' : '↑' }}</span></button></th>
+          <th>Statut</th>
+          <th><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of resultat()?.content ?? []; track u.keycloakId) {
+          <tr>
+            <td><b>{{ u.lastName }}</b> {{ u.firstName }}</td>
+            <td class="mono petit">{{ u.email }}</td>
+            <td>{{ u.organisation ?? '—' }}</td>
+            <td class="petit">{{ u.createdAt | date: 'mediumDate' }}</td>
+            <td><span class="tag" [class.tag-ok]="u.active" [class.tag-danger]="!u.active">{{ u.active ? 'ACTIF' : 'INACTIF' }}</span></td>
+            <td class="droite">
+              <button type="button" class="btn btn-outline mini" (click)="basculer(u)" [disabled]="enCours() === u.keycloakId">
+                {{ u.active ? 'Désactiver' : 'Réactiver' }}
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="vide">{{ chargement() ? 'Chargement…' : 'Aucun utilisateur ne correspond.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (resultat(); as r) {
+    @if (r.totalPages > 1) {
+      <nav class="pagination" aria-label="Pages">
+        <span class="petit">{{ r.totalElements }} comptes · page {{ r.page + 1 }} / {{ r.totalPages }}</span>
+        <div>
+          <button type="button" class="btn btn-outline mini" [disabled]="r.page === 0" (click)="allerA(r.page - 1)">Précédente</button>
+          <button type="button" class="btn btn-outline mini" [disabled]="r.page + 1 >= r.totalPages" (click)="allerA(r.page + 1)">Suivante</button>
+        </div>
+      </nav>
+    }
+  }
+</div>

@@ -1,0 +1,68 @@
+<div class="eyebrow">Demande de transfert</div>
+<h1 class="page-title">Trouver <em>la bonne place</em></h1>
+<p class="page-sub">Décrivez le besoin du patient, situez-le sur la carte, puis retenez une place dans l'établissement le mieux classé.</p>
+
+<div class="grille">
+  <form class="card panneau" [formGroup]="form" (ngSubmit)="chercher()" novalidate>
+    <div class="field">
+      <label for="mission">Mission</label>
+      <div class="ligne">
+        <input id="mission" class="input mono" formControlName="missionId" [class.invalid]="form.controls.missionId.invalid && form.controls.missionId.touched" />
+        <button type="button" class="btn btn-outline petit" (click)="nouvelleMission()" title="Générer une mission de démonstration">Nouvelle</button>
+      </div>
+      <span class="aide">Identifiant de la mission (module Interventions). Une seule demande ouverte par mission.</span>
+    </div>
+    <div class="deux">
+      <div class="field">
+        <label for="spec">Spécialité requise</label>
+        <select id="spec" class="select" formControlName="specialiteRequise">
+          @for (s of specialites; track s) { <option [value]="s">{{ libSpec[s] }}</option> }
+        </select>
+      </div>
+      <div class="field">
+        <label for="grav">Gravité</label>
+        <select id="grav" class="select" formControlName="gravite">
+          @for (g of gravites; track g) { <option [value]="g">{{ libGrav[g] }}</option> }
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <span class="lbl">Position du patient <span class="facultatif">cliquez sur la carte</span></span>
+      <span class="mono pos">{{ position() ? position()!.lat + ', ' + position()!.lon : 'Non renseignée : la distance ne comptera pas dans le score.' }}</span>
+    </div>
+    <button type="submit" class="btn btn-primary" [disabled]="recherche()">
+      {{ recherche() ? 'Recherche…' : 'Rechercher les établissements compatibles' }} <span class="arr">→</span>
+    </button>
+  </form>
+
+  <app-carte class="carte" [points]="points()" [trajet]="true" [cliquable]="true" (clic)="placer($event)"
+             libelle="Carte : cliquez pour placer le patient" />
+</div>
+
+@if (candidats(); as liste) {
+  <section class="resultats rise">
+    <div class="eyebrow">Établissements compatibles · classés</div>
+    @for (c of liste; track c.serviceId; let i = $index) {
+      <button type="button" class="cand" [class.best]="c.serviceId === choix()" (click)="choix.set(c.serviceId)" [attr.aria-pressed]="c.serviceId === choix()">
+        <span class="rang num">{{ i + 1 }}</span>
+        <span class="info">
+          <b>{{ c.hopitalNom }}</b>
+          <span class="mono meta">{{ libSpec[c.specialite] }} · {{ c.placesDisponibles }} libre{{ c.placesDisponibles > 1 ? 's' : '' }} / {{ c.capaciteTotale }}@if (c.distanceKm !== null) { · {{ c.distanceKm.toFixed(1).replace('.', ',') }} km}</span>
+          <span class="justif">{{ c.justification }}</span>
+          <span class="sous">Distance {{ c.sousScores.distance }} · Disponibilité {{ c.sousScores.disponibilite }} · Spécialité {{ c.sousScores.specialite }}</span>
+        </span>
+        <app-score-ring [valeur]="c.score" />
+      </button>
+    } @empty {
+      <div class="card vide">Aucun établissement n'a de place pour ce besoin. Élargissez la spécialité ou réessayez dans un instant.</div>
+    }
+    @if (candidatChoisi(); as c) {
+      <div class="reserve">
+        <span>Retenir une place à <b>{{ c.hopitalNom }}</b> pendant 15 minutes.</span>
+        <button type="button" class="btn btn-primary" (click)="reserver()" [disabled]="reservation()">
+          {{ reservation() ? 'Réservation…' : 'Réserver la place' }} <span class="arr">→</span>
+        </button>
+      </div>
+    }
+  </section>
+}

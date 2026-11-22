@@ -12,7 +12,7 @@
 - Angular **22.3** : standalone, signals, nouveau control flow, `OnPush`, SCSS ;
 - `angular-oauth2-oidc` **22.0.2** ;
 - `@angular/cdk` **22.3** (overlay, a11y) ;
-- Leaflet **1.9.4** avec les tuiles CARTO Positron / Dark Matter (gratuites, avec attribution) ;
+- Leaflet **1.9.4** avec les tuiles OpenStreetMap (gratuites, sans clé, avec attribution ; sombres par filtre CSS). Les tuiles CARTO demandent désormais une clé ;
 - tests : le runner par défaut d'Angular 22 ;
 - Node 22.22.3.
 
@@ -21,9 +21,9 @@
 ## Contraintes globales
 - **URLs** :
   - application `http://localhost:4200` ;
-  - API **toujours** via `http://localhost:8080`, jamais un port de microservice ;
+  - API **toujours** via la Gateway, en chemin relatif `/api/...` : `ng serve` relaie vers la Gateway (`proxy.conf.mjs`, port lu dans `.env` : `GATEWAY_HOST_PORT`, 8080 par défaut), jamais un port de microservice ;
   - Keycloak `http://localhost:8180/realms/rescueops`, client public `rescueops-web` (PKCE S256), déjà configuré dans le realm.
-- **Aucun secret** dans le code Angular. Le token n'est envoyé **qu'à** `http://localhost:8080` (liste blanche de l'intercepteur). Aucun token dans les logs.
+- **Aucun secret** dans le code Angular. Le token n'est envoyé **qu'à** `/api` (même origine, liste blanche de l'intercepteur). Aucun token dans les logs.
 - **Les rôles** sont lus dans `realm_access.roles` de l'access token. Les guards ne servent **qu'à l'ergonomie** : la sécurité réelle reste côté API.
 - **Design** :
   - toutes les couleurs passent par les variables de `tokens.css` (copié dans `src/styles/tokens.css`) ;

@@ -1,0 +1,65 @@
+<div class="scrim" (click)="fermer.emit()" aria-hidden="true"></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="tiroir-titre" cdkTrapFocus cdkTrapFocusAutoCapture>
+  @let t = transfert();
+  <div class="dh">
+    <div>
+      <div class="eyebrow">Demande de transfert</div>
+      <div id="tiroir-titre" class="mono titre">{{ code() }} · {{ mission() }}</div>
+    </div>
+    <button type="button" class="x" (click)="fermer.emit()" aria-label="Fermer">✕</button>
+  </div>
+
+  <app-carte class="map" [points]="points()" [trajet]="true" libelle="Trajet du patient vers l'établissement" />
+
+  <div class="db">
+    <app-frise [transfert]="t" />
+
+    <dl class="infos">
+      <div><dt>Statut</dt><dd><app-statut [statut]="t.statut" /></dd></div>
+      <div><dt>Spécialité</dt><dd>{{ libSpec[t.specialiteRequise] }}</dd></div>
+      <div><dt>Gravité</dt><dd>{{ libGrav[t.gravite] }}</dd></div>
+      <div><dt>Établissement</dt><dd>{{ t.hopitalNom ?? 'Pas encore choisi' }}</dd></div>
+      <div><dt>Créée le</dt><dd>{{ t.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+    </dl>
+
+    @if (t.statut === 'PLACE_RETENUE' && t.expireAt) {
+      <div class="timer">
+        <div>
+          <div class="t-titre">Place retenue{{ t.hopitalNom ? ' à ' + t.hopitalNom : '' }}</div>
+          <div class="t-aide">libérée automatiquement à l'expiration</div>
+        </div>
+        <app-countdown class="t-num" [expireAt]="t.expireAt" />
+      </div>
+    }
+    @if (t.motifRefus) { <p class="refus">Motif du refus : {{ t.motifRefus }}</p> }
+
+    @if (t.historique?.length) {
+      <div class="eyebrow hist-titre">Historique</div>
+      <ol class="hist">
+        @for (h of t.historique; track $index) {
+          <li>
+            <span class="point" aria-hidden="true"></span>
+            <span><b>{{ libStatut[h.nouveauStatut] }}</b>@if (h.commentaire) { · {{ h.commentaire }}}</span>
+            <span class="mono quand">{{ h.horodatage | date: 'dd/MM/yyyy HH:mm' }}</span>
+          </li>
+        }
+      </ol>
+    }
+  </div>
+
+  @if (boutons().length) {
+    <div class="da">
+      @for (b of boutons(); track b) {
+        @if (b === 'reserver') {
+          <a class="btn btn-outline" routerLink="/hopitaux/nouvelle-demande">{{ libAction[b] }}</a>
+        } @else {
+          <button type="button" class="btn" [disabled]="enCours()" (click)="agir(b)"
+                  [class.btn-primary]="b === 'confirmer' || b === 'admettre' || b === 'sortie'"
+                  [class.btn-outline]="b === 'refuser' || b === 'annuler'">
+            {{ libAction[b] }}@if (b === 'confirmer') { <span class="arr">→</span>}
+          </button>
+        }
+      }
+    </div>
+  }
+</aside>

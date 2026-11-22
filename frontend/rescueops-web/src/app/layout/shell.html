@@ -1,0 +1,43 @@
+<a class="skip" href="#contenu">Aller au contenu</a>
+
+@if (operationnel()) {
+  <app-ticker [items]="feed.items()" vide="Aucun transfert récent" />
+}
+
+<header class="top">
+  <a routerLink="/accueil" class="brand-link" aria-label="RescueOps, accueil"><app-brand /></a>
+
+  <nav class="tabs" aria-label="Navigation principale">
+    @for (o of onglets(); track o.path) {
+      <a [routerLink]="o.path" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: o.path === '/accueil' }"
+         ariaCurrentWhenActive="page">{{ o.label }}</a>
+    }
+  </nav>
+
+  <div class="right">
+    <app-theme-toggle />
+    @if (auth.utilisateur(); as u) {
+      <button type="button" class="avatar" [cdkMenuTriggerFor]="menuCompte" [attr.aria-label]="'Compte de ' + u.nom">
+        {{ u.initiales }}
+      </button>
+      <ng-template #menuCompte>
+        <div class="menu" cdkMenu>
+          <div class="menu-head">
+            <b>{{ u.nom }}</b>
+            <span class="mono">{{ u.email }}</span>
+            <span class="roles">{{ libelleRoles() }}</span>
+          </div>
+          <a cdkMenuItem routerLink="/profil" class="item">Mon profil et mes rôles</a>
+          @if (auth.hasRole('ADMIN')) {
+            <a cdkMenuItem routerLink="/admin/demandes-role" class="item">Demandes de rôle</a>
+          }
+          <button cdkMenuItem type="button" class="item danger" (click)="auth.logout()">Se déconnecter</button>
+        </div>
+      </ng-template>
+    }
+  </div>
+</header>
+
+<main id="contenu" class="contenu">
+  <router-outlet />
+</main>

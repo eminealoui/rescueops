@@ -1,0 +1,17 @@
+.lien { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+.outils { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 20px 0 14px; }
+.recherche { flex: 1; min-width: 220px; max-width: 420px; }
+.chips { display: flex; gap: 6px; }
+.tableau { padding: 0; overflow: hidden; transition: opacity var(--t); }
+.tableau:hover { transform: none; }
+.tableau.charge { opacity: .6; }
+.scroll { overflow-x: auto; }
+.th { border: 0; background: none; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; padding: 0; }
+.fl { opacity: .35; }
+th[aria-sort="ascending"] .fl, th[aria-sort="descending"] .fl { opacity: 1; color: var(--brand); }
+.petit { font-size: 12px; color: var(--text-2); }
+.droite { text-align: right; }
+.mini { padding: 6px 12px; font-size: 12px; }
+.vide { text-align: center; color: var(--text-3); padding: 32px; }
+.pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; flex-wrap: wrap; }
+.pagination div { display: flex; gap: 6px; }
