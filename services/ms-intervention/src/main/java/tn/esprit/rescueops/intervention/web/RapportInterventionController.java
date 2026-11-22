@@ -6,6 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
 import tn.esprit.rescueops.intervention.dto.RapportRequest;
 import tn.esprit.rescueops.intervention.dto.RapportResponse;
 import tn.esprit.rescueops.intervention.service.RapportInterventionService;
@@ -43,4 +47,22 @@ public class RapportInterventionController {
     ) {
         return service.trouver(missionId);
     }
+
+    @PutMapping
+    @PreAuthorize("hasAnyRole('AMBULANCIER', 'ADMIN')")
+    public RapportResponse modifier(
+        @PathVariable UUID missionId,
+        @Valid @RequestBody RapportRequest request
+    ) {
+        return service.modifier(missionId, request);
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('AMBULANCIER', 'ADMIN')")
+    public void supprimer(@PathVariable UUID missionId) {
+        service.supprimer(missionId);
+    }
+
+
 }

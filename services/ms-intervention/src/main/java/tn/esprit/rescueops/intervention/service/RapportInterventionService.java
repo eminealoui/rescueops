@@ -5,6 +5,11 @@ import tn.esprit.rescueops.intervention.domain.Mission;
 import tn.esprit.rescueops.intervention.domain.RapportIntervention;
 import tn.esprit.rescueops.intervention.domain.StatutMission;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import tn.esprit.rescueops.common.security.CurrentUser;
+import tn.esprit.rescueops.common.security.Role;
+
 import tn.esprit.rescueops.intervention.dto.RapportRequest;
 import tn.esprit.rescueops.intervention.dto.RapportResponse;
 
@@ -152,4 +157,88 @@ public class RapportInterventionService {
             rapport.getCreeLe()
         );
     }
+
+    @Transactional
+    public RapportResponse modifier(
+        UUID missionId,
+        RapportRequest request
+    ) {
+
+        // 1. Rechercher la mission
+        Mission mission = missionRepository.findById(missionId)
+            .orElseThrow(() ->
+                new NotFoundException("Mission introuvable")
+            );
+
+        // 2. Vérifier les droits d'accès
+        verifierAcces(mission);
+
+        // 3. Rechercher le rapport existant
+        RapportIntervention rapport = rapportRepository
+            .findByMission_Id(missionId)
+            .orElseThrow(() ->
+                new NotFoundException(
+                    "Rapport introuvable"
+                )
+            );
+
+        // 4. Modifier les informations du rapport
+        rapport.setBilan(request.bilan());
+        rapport.setActionsRealisees(request.actionsRealisees());
+        rapport.setObservations(request.observations());
+
+        // 5. Enregistrer dans MySQL
+        RapportIntervention rapportModifie =
+            rapportRepository.save(rapport);
+
+        return toResponse(rapportModifie);
+    }
+
+    @Transactional
+    public void supprimer(UUID missionId) {
+
+        // 1. Rechercher la mission
+        Mission mission = missionRepository.findById(missionId)
+            .orElseThrow(() ->
+                new NotFoundException("Mission introuvable")
+            );
+
+        // 2. Vérifier les droits d'accès
+        verifierAcces(mission);
+
+        // 3. Rechercher le rapport
+        RapportIntervention rapport = rapportRepository
+            .findByMission_Id(missionId)
+            .orElseThrow(() ->
+                new NotFoundException("Rapport introuvable")
+            );
+
+        // 4. Supprimer le rapport
+        rapportRepository.delete(rapport);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RapportResponse> lister(Pageable pageable) {
+
+        CurrentUser utilisateur = CurrentUser.current()
+            .orElseThrow();
+
+        Page<RapportIntervention> rapports;
+
+        if (utilisateur.has(Role.ADMIN)) {
+            // Administrateur : tous les rapports
+            rapports = rapportRepository.findAll(pageable);
+        } else {
+            // Ambulancier : uniquement ses rapports
+            rapports = rapportRepository.findPourUtilisateur(
+                utilisateur.keycloakId(),
+                pageable
+            );
+        }
+
+        return rapports.map(this::toResponse);
+    }
+
+
+
 }

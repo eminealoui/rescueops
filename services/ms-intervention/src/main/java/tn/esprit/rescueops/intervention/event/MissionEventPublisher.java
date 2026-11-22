@@ -47,10 +47,7 @@ public class MissionEventPublisher {
         );
 
         RescueOpsEvent<Map<String, String>> event =
-            RescueOpsEvent.of(
-                "mission.terminee",
-                payload
-            );
+            RescueOpsEvent.of("mission.terminee", payload);
 
         rabbitTemplate.convertAndSend(
             RescueOpsAmqpAutoConfiguration.EVENTS_EXCHANGE,
@@ -59,4 +56,23 @@ public class MissionEventPublisher {
         );
     }
 
+    public void publierReaffectation(
+        String eventType,
+        Map<String, String> payload
+    ) {
+
+        System.out.println("[RABBITMQ] Publication : " + eventType);
+        System.out.println("[RABBITMQ] Payload : " + payload);
+
+        RescueOpsEvent<Map<String, String>> event =
+            RescueOpsEvent.of(eventType, payload);
+
+        rabbitTemplate.convertAndSend(
+            RescueOpsAmqpAutoConfiguration.EVENTS_EXCHANGE,
+            eventType,
+            event
+        );
+
+        System.out.println("[RABBITMQ] Envoi termine : " + eventType);
+    }
 }

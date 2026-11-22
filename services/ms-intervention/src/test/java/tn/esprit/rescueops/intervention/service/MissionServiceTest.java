@@ -11,6 +11,13 @@ import java.util.UUID;
 
 import org.springframework.security.access.AccessDeniedException;
 import tn.esprit.rescueops.intervention.dto.ChangerStatutMissionRequest;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import java.util.Map;
+import java.util.List;
+import java.util.List;
+import tn.esprit.rescueops.common.error.ConflictException;
 
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -47,9 +54,15 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-
+import tn.esprit.rescueops.intervention.dto.ModifierMissionRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class MissionServiceTest {
+    @Mock
+    private CalculItineraireService calculItineraireService;
 
     @Mock
     private MissionRepository missionRepository;
@@ -366,6 +379,259 @@ class MissionServiceTest {
         verifyNoInteractions(historiqueRepository);
         verifyNoInteractions(eventPublisher);
     }
+
+    @Test
+    void modifierCommentaireMission() {
+
+        UUID missionId = UUID.randomUUID();
+        String ambulancierId = UUID.randomUUID().toString();
+
+        connecterAmbulancier(ambulancierId);
+
+        Mission mission = new Mission();
+
+        mission.setId(missionId);
+        mission.setStatut(StatutMission.ACCEPTEE);
+        mission.setCommentaire("Ancien commentaire");
+        mission.setAmbulancierKeycloakId(ambulancierId);
+        mission.setCreeLe(Instant.now());
+
+        when(missionRepository.findById(missionId))
+            .thenReturn(Optional.of(mission));
+
+        when(missionRepository.save(any(Mission.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var resultat = service.modifier(
+            missionId,
+            new ModifierMissionRequest("Nouveau commentaire")
+        );
+
+        assertEquals("Nouveau commentaire", resultat.commentaire());
+
+        assertEquals(StatutMission.ACCEPTEE, resultat.statut());
+
+        assertEquals(missionId, resultat.id());
+
+        verify(missionRepository).save(mission);
+    }
+
+    @Test
+    void supprimerMissionManuelleNonCommencee() {
+
+        UUID missionId = UUID.randomUUID();
+        String ambulancierId = UUID.randomUUID().toString();
+
+        connecterAmbulancier(ambulancierId);
+
+        Mission mission = new Mission();
+        mission.setId(missionId);
+        mission.setStatut(StatutMission.ACCEPTEE);
+        mission.setCreePar(ambulancierId);
+
+        when(missionRepository.findById(missionId))
+            .thenReturn(Optional.of(mission));
+
+        when(historiqueRepository
+            .findByMission_IdOrderByDateChangementAsc(missionId))
+            .thenReturn(List.of());
+
+        service.supprimer(missionId);
+
+        verify(missionRepository, times(1))
+            .delete(mission);
+    }
+
+    @Test
+    void refuserSuppressionMissionTerminee() {
+
+        UUID missionId = UUID.randomUUID();
+        String ambulancierId = UUID.randomUUID().toString();
+
+        connecterAmbulancier(ambulancierId);
+
+        Mission mission = new Mission();
+        mission.setId(missionId);
+        mission.setStatut(StatutMission.TERMINEE);
+        mission.setCreePar(ambulancierId);
+
+        when(missionRepository.findById(missionId))
+            .thenReturn(Optional.of(mission));
+
+        assertThrows(
+            ConflictException.class,
+            () -> service.supprimer(missionId)
+        );
+
+        verify(missionRepository, never())
+            .delete(any(Mission.class));
+    }
+
+    @Test
+    void refuserSuppressionMissionDepuisDispatch() {
+
+        UUID missionId = UUID.randomUUID();
+        String ambulancierId = UUID.randomUUID().toString();
+
+        connecterAmbulancier(ambulancierId);
+
+        Mission mission = new Mission();
+        mission.setId(missionId);
+        mission.setStatut(StatutMission.ACCEPTEE);
+        mission.setAffectationId(UUID.randomUUID());
+        mission.setAmbulancierKeycloakId(ambulancierId);
+
+        when(missionRepository.findById(missionId))
+            .thenReturn(Optional.of(mission));
+
+        assertThrows(
+            ConflictException.class,
+            () -> service.supprimer(missionId)
+        );
+
+        verify(missionRepository, never())
+            .delete(any(Mission.class));
+    }
+
+
+    @Test
+    void listerUniquementMissionsUtilisateurConnecte() {
+
+        String ambulancierId = UUID.randomUUID().toString();
+
+        connecterAmbulancier(ambulancierId);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Mission mission = new Mission();
+        mission.setId(UUID.randomUUID());
+        mission.setCommentaire("Mission affectee");
+        mission.setStatut(StatutMission.ACCEPTEE);
+        mission.setAmbulancierKeycloakId(ambulancierId);
+        mission.setCreeLe(Instant.now());
+
+        when(missionRepository.findPourUtilisateur(
+            ambulancierId, pageable))
+            .thenReturn(new PageImpl<>(
+                List.of(mission), pageable, 1
+            ));
+
+        var resultat = service.lister(pageable);
+
+        assertEquals(1, resultat.getTotalElements());
+
+        assertEquals(
+            mission.getId(),
+            resultat.getContent().get(0).id()
+        );
+
+        verify(missionRepository)
+            .findPourUtilisateur(ambulancierId, pageable);
+
+        verify(missionRepository, never())
+            .findAll(pageable);
+    }
+
+
+    @Test
+    void retournerListeVideSiAucuneMission() {
+
+        String ambulancierId = UUID.randomUUID().toString();
+
+        connecterAmbulancier(ambulancierId);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        when(missionRepository.findPourUtilisateur(
+            ambulancierId, pageable))
+            .thenReturn(Page.empty(pageable));
+
+        var resultat = service.lister(pageable);
+
+        assertTrue(resultat.isEmpty());
+        assertEquals(0, resultat.getTotalElements());
+
+        verify(missionRepository, never())
+            .findAll(pageable);
+    }
+
+    private void connecterOperateur(String utilisateurId) {
+
+        Jwt jwt = Jwt.withTokenValue("test-operateur")
+            .header("alg", "none")
+            .subject(utilisateurId)
+            .claim("realm_access", Map.of(
+                "roles", List.of("OPERATEUR")
+            ))
+            .build();
+
+        JwtAuthenticationToken authentication =
+            new JwtAuthenticationToken(
+                jwt,
+                List.of(
+                    new SimpleGrantedAuthority(
+                        "ROLE_OPERATEUR"
+                    )
+                )
+            );
+
+        SecurityContextHolder.getContext()
+            .setAuthentication(authentication);
+    }
+
+    @Test
+    void operateurPeutConsulterToutesLesMissions() {
+
+        String operateurId = UUID.randomUUID().toString();
+
+        connecterOperateur(operateurId);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Mission mission = new Mission();
+
+        mission.setId(UUID.randomUUID());
+        mission.setCommentaire("Intervention urgente");
+        mission.setStatut(StatutMission.ACCEPTEE);
+        mission.setCreeLe(Instant.now());
+
+        // La mission appartient a un autre utilisateur
+        mission.setAmbulancierKeycloakId(
+            UUID.randomUUID().toString()
+        );
+
+        when(missionRepository.findAll(pageable))
+            .thenReturn(
+                new PageImpl<>(
+                    List.of(mission),
+                    pageable,
+                    1
+                )
+            );
+
+        var resultat = service.lister(pageable);
+
+        assertEquals(1, resultat.getTotalElements());
+
+        assertEquals(
+            mission.getId(),
+            resultat.getContent().get(0).id()
+        );
+
+        verify(missionRepository).findAll(pageable);
+
+        verify(missionRepository, never())
+            .findPourUtilisateur(
+                anyString(),
+                any(Pageable.class)
+            );
+    }
+
+
+
+
+
+
 
 
 
