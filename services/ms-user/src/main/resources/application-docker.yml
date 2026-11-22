@@ -11,5 +11,8 @@ eureka:
     prefer-ip-address: true
 
 rescueops:
+  keycloak:
+    admin:
+      base-url: http://keycloak:8080
   security:
     jwk-set-uri: http://keycloak:8080/realms/rescueops/protocol/openid-connect/certs

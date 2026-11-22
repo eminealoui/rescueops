@@ -39,3 +39,12 @@ management:
     health:
       probes:
         enabled: true
+
+rescueops:
+  keycloak:
+    admin:
+      # Compte de service du client confidentiel ms-user-admin (rôles manage-users, view-realm).
+      base-url: ${KEYCLOAK_URL:http://localhost:8180}
+      realm: rescueops
+      client-id: ms-user-admin
+      client-secret: ${KEYCLOAK_MS_USER_SECRET:dev_ms_user_admin}

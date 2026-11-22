@@ -129,6 +129,22 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [],
       "webOrigins": []
+    },
+    {
+      "clientId": "ms-user-admin",
+      "name": "Compte de service de ms-user (attribution des rôles validés par un ADMIN)",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${KEYCLOAK_MS_USER_SECRET:dev_ms_user_admin}",
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "defaultClientScopes": ["basic", "roles", "kc-admin-api"]
     }
   ],
   "users": [
@@ -283,6 +299,17 @@
         "default-roles-rescueops",
         "ADMIN"
       ]
+    },
+    {
+      "username": "service-account-ms-user-admin",
+      "enabled": true,
+      "serviceAccountClientId": "ms-user-admin",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-realm"
+        ]
+      }
     }
   ]
 }

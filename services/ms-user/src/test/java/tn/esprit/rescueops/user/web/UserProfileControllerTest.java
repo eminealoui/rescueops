@@ -46,6 +46,9 @@ class UserProfileControllerTest {
     @MockitoBean
     UserProfileService service;
 
+    @MockitoBean
+    tn.esprit.rescueops.user.service.DemandeRoleService demandesRole;
+
     private static final UserProfileResponse PROFIL = new UserProfileResponse("sub-1", "a@rescueops.test", "Amine",
             "Ben Salah", null, null, null, true, Instant.parse("2026-11-21T10:00:00Z"), Instant.parse("2026-11-21T10:00:00Z"));
 
