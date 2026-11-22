@@ -1,16 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ThemeService } from '../theme/theme.service';
 
-/** Logo RescueOps (losange rayé jaune et bleu clair). */
+/** Logo RescueOps : croix médicale traversée par un pouls, balise ambre (source : docs/design/logo.svg). */
 @Component({
   selector: 'app-brand',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span class="logo" aria-hidden="true"><i></i></span><span>RescueOps</span>`,
+  template: `<img class="logo" src="logo.svg" alt="" width="30" height="30" /><span>RescueOps</span>`,
   styles: `
     :host { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; letter-spacing: -.2px; color: var(--text); }
-    .logo { width: 28px; height: 28px; border-radius: 8px; background: var(--brand-deep); display: grid; place-items: center; }
-    .logo i { width: 12px; height: 12px; border-radius: 2px; transform: rotate(45deg);
-              background: repeating-linear-gradient(135deg, #f2c230 0 3px, var(--brand-on) 3px 6px); }
+    .logo { width: 30px; height: 30px; border-radius: 8px; flex: none; box-shadow: 0 4px 10px -4px rgba(11, 47, 64, .5); }
   `,
 })
 export class Brand {}
