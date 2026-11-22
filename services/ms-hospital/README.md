@@ -94,9 +94,15 @@ Cette commande lance **49 tests**, dont 5 sur un **vrai MySQL 8.4 et un vrai Rab
 - **les événements partent après le commit** ;
 - **la migration Flyway correspond aux entités.**
 
-## Limites connues
+## Choix de conception : coordinateur régional
 
-- **Un coordinateur hospitalier peut agir sur les demandes de tous les hôpitaux.** Le rattachement d'un coordinateur à **son** établissement n'existe pas encore : il faudrait un attribut Keycloak (`hopitalId`) ou un champ dans ms-user.
+**Un coordinateur hospitalier a accès à TOUS les hôpitaux** (décision du porteur du module, le 22/11/2026). Il joue un rôle de **régulation régionale** : il peut confirmer, refuser, admettre ou déclarer la sortie des patients de n'importe quel établissement, pour garder de la souplesse en situation d'urgence.
+
+Chaque action reste **tracée** dans l'historique de la demande, avec l'identifiant du coordinateur.
+
+Évolution possible : rattacher un coordinateur à un établissement, par un attribut Keycloak `hopitalId` vérifié dans `TransfertService`.
+
+## Limites connues
 
 - **Sans pattern Outbox**, un événement est perdu (et journalisé en erreur) si RabbitMQ est en panne au moment exact de la publication. L'opération en base, elle, reste valide.
 - **La distance est calculée à vol d'oiseau** (formule de Haversine), pas par la route.
