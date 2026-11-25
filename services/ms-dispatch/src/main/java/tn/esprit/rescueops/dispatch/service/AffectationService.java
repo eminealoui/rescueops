@@ -92,6 +92,7 @@ public class AffectationService {
         affectation.setIncidentId(request.incidentId());
         affectation.setRessourceId(request.ressourceId());
         affectation.setTypeRessource(request.typeRessource());
+        affectation.setScore(request.score());
         affectation.setStatut(StatutAffectation.PROPOSEE);
         affectation.setOperateurId(operateurId);
 

@@ -15,7 +15,7 @@ export const NAVIGATION: readonly EntreeNav[] = [
   { label: 'Accueil', path: '/accueil', roles: [] },
   { label: 'Urgences', path: '/modules/ms1', roles: ['CITOYEN', 'OPERATEUR', 'ADMIN'] },
   { label: 'Ressources', path: '/modules/ms2', roles: ['GESTIONNAIRE_RESSOURCES', 'ADMIN'] },
-  { label: 'Dispatch', path: '/modules/ms3', roles: ['OPERATEUR', 'ADMIN'] },
+  { label: 'Dispatch', path: '/dispatch', roles: ['OPERATEUR', 'ADMIN'] },
   { label: 'Interventions', path: '/modules/ms4', roles: ['OPERATEUR', 'AMBULANCIER', 'ADMIN'] },
   { label: 'Hôpitaux', path: '/hopitaux', roles: ['OPERATEUR', 'AMBULANCIER', 'COORDINATEUR_HOSPITALIER', 'ADMIN'] },
   { label: 'Formations', path: '/modules/ms6', roles: ['FORMATEUR', 'APPRENANT', 'ADMIN'] },

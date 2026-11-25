@@ -1,0 +1,15 @@
+.conteneur-form { max-width: 600px; margin-top: 24px; }
+.panneau { display: grid; gap: 18px; }
+.panneau:hover { transform: none; }
+.ligne { display: flex; gap: 8px; }
+.ligne .input { flex: 1; min-width: 0; font-size: 12.5px; }
+.petit { padding: 7px 12px; font-size: 12px; }
+.aide { font-size: 11.5px; color: var(--text-3); font-weight: 400; }
+.erreur-txt { font-size: 11.5px; color: var(--danger); font-weight: 500; }
+
+.range-row { display: flex; align-items: center; gap: 14px; }
+.range-input { flex: 1; height: 6px; border-radius: 3px; accent-color: var(--brand); cursor: pointer; }
+.input-score { width: 75px; text-align: center; }
+
+.pied-boutons { margin-top: 8px; display: flex; justify-content: flex-end; }
+.pied-boutons .btn-primary { padding: 10px 24px; }

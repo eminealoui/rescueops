@@ -188,6 +188,59 @@ export interface EvenementFlux {
 }
 
 /** Code court lisible d'un identifiant UUID (ex. « TRF-3F2A »). */
-export function codeCourt(prefixe: string, id: string): string {
-  return `${prefixe}-${id.replace(/-/g, '').slice(0, 4).toUpperCase()}`;
+export function codeCourt(prefixe: string, id: string | number): string {
+  return `${prefixe}-${String(id).replace(/-/g, '').slice(0, 4).toUpperCase()}`;
+}
+
+// ---------- ms-dispatch ----------
+export const STATUTS_AFFECTATION = ['PROPOSEE', 'CONFIRMEE', 'ANNULEE'] as const;
+export type StatutAffectation = (typeof STATUTS_AFFECTATION)[number];
+export const LIBELLES_STATUT_AFFECTATION: Record<StatutAffectation, string> = {
+  PROPOSEE: 'Proposée',
+  CONFIRMEE: 'Confirmée',
+  ANNULEE: 'Annulée',
+};
+
+/** Corps envoyé à ms-dispatch. Le score reste exprimé en 0–100 côté UI, DispatchApi le convertit en 0–1 pour l'API. */
+export interface AffectationRequest {
+  incidentId: string;
+  ressourceId: string;
+  typeRessource?: string | null;
+  score?: number;
+}
+
+export interface AffectationResponse {
+  /** Identifiant technique : Long côté Java, reçu comme nombre en JSON. */
+  id: number | string;
+  incidentId: string;
+  ressourceId: string;
+  typeRessource: string | null;
+  /** Score ramené en 0–100 par DispatchApi (le backend stocke 0–1). */
+  score: number | null;
+  justification: string | null;
+  operateurId: string | null;
+  statut: StatutAffectation;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecommandationRequest {
+  incidentId: string;
+  latitudeIncident: number | null;
+  longitudeIncident: number | null;
+  typeRessource: string | null;
+}
+
+export interface RecommandationResponse {
+  id: number | string;
+  incidentId: string;
+  ressourceId: string;
+  nomRessource: string | null;
+  /** Score ramené en 0–100 par DispatchApi (le backend stocke 0–1). */
+  score: number;
+  distanceKm: number | null;
+  disponible: boolean;
+  competencesOk: boolean;
+  typeRessource: string | null;
+  justification: string | null;
 }

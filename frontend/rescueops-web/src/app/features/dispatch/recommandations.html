@@ -1,0 +1,115 @@
+<div class="eyebrow">Dispatching Intelligent · Module 3</div>
+<h1 class="page-title">Recommandations &amp; <em>Scoring (BF-07)</em></h1>
+<p class="page-sub">Calculez en temps réel le classement algorithmique des ressources d'urgence selon la distance Haversine, la disponibilité et les compétences requises.</p>
+
+<div class="grille">
+  <form class="card panneau" [formGroup]="form" (ngSubmit)="calculer()" novalidate>
+    <div class="field">
+      <label for="incident">Incident cible</label>
+      <div class="ligne">
+        <input id="incident" class="input mono" formControlName="incidentId" [class.invalid]="form.controls.incidentId.invalid && form.controls.incidentId.touched" placeholder="UUID de l'incident" />
+        <button type="button" class="btn btn-outline petit" (click)="nouvelIncident()" title="Générer un nouvel UUID">Nouveau</button>
+      </div>
+      <span class="aide">Identifiant unique de l'incident priorisé.</span>
+    </div>
+
+    <div class="deux">
+      <div class="field">
+        <label for="lat">Latitude incident</label>
+        <input id="lat" type="number" step="0.0001" class="input mono" formControlName="latitudeIncident" />
+      </div>
+      <div class="field">
+        <label for="lon">Longitude incident</label>
+        <input id="lon" type="number" step="0.0001" class="input mono" formControlName="longitudeIncident" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="typeRes">Type de ressource souhaité</label>
+      <select id="typeRes" class="select" formControlName="typeRessource">
+        @for (t of typesRessource; track t.value) {
+          <option [value]="t.value">{{ t.label }}</option>
+        }
+      </select>
+      <span class="aide">Optionnel : filtrer le calcul sur un profil d'unité spécifique.</span>
+    </div>
+
+    <div class="boutons">
+      <button type="submit" class="btn btn-primary" [disabled]="calculEnCours()">
+        {{ calculEnCours() ? 'Calcul en cours…' : 'Calculer les recommandations' }} <span class="arr">→</span>
+      </button>
+      <button type="button" class="btn btn-outline" (click)="consulterExistant()" [disabled]="calculEnCours()">
+        Consulter l'historique
+      </button>
+    </div>
+  </form>
+
+  <div class="card info-box">
+    <h3>Algorithme de Dispatching Intelligent</h3>
+    <p>Le calcul applique une pondération multicritère pour optimiser le temps de réponse opérationnel :</p>
+    <ul class="liste-criteres">
+      <li><strong>Proximité géographique (60%) :</strong> Calcul de distance réelle à vol d'oiseau (formule de Haversine).</li>
+      <li><strong>Disponibilité immédiate (30%) :</strong> Bonus accordé aux unités prêtes au déploiement immédiat.</li>
+      <li><strong>Adéquation compétence (10%) :</strong> Conformité exacte avec le type d'intervention demandé.</li>
+    </ul>
+    <div class="formule-note">
+      <code>Score = (Distance_norm × 0.60) + (Disponibilité × 0.30) + (Compétence × 0.10)</code>
+    </div>
+  </div>
+</div>
+
+@if (recommandations(); as liste) {
+  <section class="resultats rise">
+    <div class="entete-resultats">
+      <div>
+        <div class="eyebrow">{{ modeConsulte() ? 'Recommandations enregistrées' : 'Classement algorithmique direct' }}</div>
+        <h2>Ressources candidates classées ({{ liste.length }})</h2>
+      </div>
+    </div>
+
+    @for (r of liste; track r.ressourceId; let i = $index) {
+      <div class="cand-card" [class.premier]="i === 0">
+        <span class="rang num">{{ i + 1 }}</span>
+        
+        <div class="cand-details">
+          <div class="cand-header">
+            <span class="nom-res">{{ r.nomRessource || r.typeRessource || 'Ressource opérationnelle' }}</span>
+            <span class="code-mono mono">{{ r.ressourceId }}</span>
+            <span class="badge-dispo" [class.dispo]="r.disponible" [class.indispo]="!r.disponible">
+              {{ r.disponible ? 'Disponible' : 'Occupée' }}
+            </span>
+          </div>
+
+          <p class="justif">{{ r.justification }}</p>
+
+          <div class="cand-meta">
+            @if (r.distanceKm !== null) {
+              <span>Distance : <strong>{{ r.distanceKm.toFixed(1) }} km</strong></span>
+              <span class="sep">·</span>
+            }
+            <span>Type : <strong>{{ r.typeRessource || '—' }}</strong></span>
+            <span class="sep">·</span>
+            <span>Compétences : <strong>{{ r.competencesOk ? 'OK' : 'à vérifier' }}</strong></span>
+          </div>
+        </div>
+
+        <div class="cand-score">
+          <app-score-ring [valeur]="r.score" />
+          <span class="score-lbl">Score : {{ r.score }}/100</span>
+        </div>
+
+        <div class="cand-actions">
+          <button
+            type="button"
+            class="btn btn-primary petit"
+            (click)="affecter(r)"
+            [disabled]="affectationEnCours() === r.ressourceId">
+            {{ affectationEnCours() === r.ressourceId ? 'Affectation…' : 'Affecter' }}
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <div class="card vide">Aucune ressource disponible trouvée pour les critères fournis.</div>
+    }
+  </section>
+}

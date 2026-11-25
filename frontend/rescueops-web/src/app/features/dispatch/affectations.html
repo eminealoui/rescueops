@@ -1,0 +1,106 @@
+<div class="entete">
+  <div>
+    <div class="eyebrow">Dispatching Intelligent · Module 3</div>
+    <h1 class="page-title">Gestion des <em>Affectations (BF-08 / BF-09)</em></h1>
+  </div>
+  <div class="actions-haut">
+    <a routerLink="/dispatch/nouvelle-affectation" class="btn btn-primary">
+      + Nouvelle affectation
+    </a>
+  </div>
+</div>
+
+<div class="barre-filtres">
+  <div class="chips" role="group" aria-label="Filtrer par statut">
+    @for (f of filtres; track f.libelle) {
+      <button
+        type="button"
+        class="chip"
+        [class.on]="statutSelectionne() === f.statut"
+        (click)="filtrer(f.statut)">
+        {{ f.libelle }}
+      </button>
+    }
+  </div>
+
+  <div class="recherche-box">
+    <input
+      type="search"
+      class="input input-recherche"
+      placeholder="Filtrer par UUID, ressource..."
+      [value]="recherche()"
+      (input)="recherche.set($any($event.target).value)" />
+  </div>
+</div>
+
+<div class="card tableau">
+  <div class="scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Incident</th>
+          <th>Ressource</th>
+          <th>Score</th>
+          <th>Statut</th>
+          <th>Date de création</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of listeFiltree(); track a.id) {
+          <tr class="ligne" [class.sel]="estSelectionnee(a.id)">
+            <td class="mono bld">{{ code(a.id) }}</td>
+            <td class="mono sml" title="{{ a.incidentId }}">{{ a.incidentId }}</td>
+            <td class="mono sml" title="{{ a.ressourceId }}">{{ a.ressourceId }}</td>
+            <td>
+              <span [class]="tonScore(a.score)">
+                {{ a.score === null ? '—' : a.score }} / 100
+              </span>
+            </td>
+            <td><app-statut-affectation [statut]="a.statut" /></td>
+            <td class="petit">{{ a.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td class="actions-col">
+              @if (a.statut === 'PROPOSEE') {
+                <div class="boutons-action">
+                  <button
+                    type="button"
+                    class="btn btn-primary micro"
+                    (click)="confirmer(a)"
+                    [disabled]="actionEnCours() === a.id">
+                    Confirmer
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline micro danger"
+                    (click)="annuler(a)"
+                    [disabled]="actionEnCours() === a.id">
+                    Annuler
+                  </button>
+                </div>
+              } @else if (a.statut === 'CONFIRMEE') {
+                <div class="boutons-action">
+                  <button
+                    type="button"
+                    class="btn btn-outline micro danger"
+                    (click)="annuler(a)"
+                    [disabled]="actionEnCours() === a.id">
+                    Annuler
+                  </button>
+                </div>
+              } @else {
+                <span class="texte-inactif">—</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="vide">
+              {{ chargement() ? 'Chargement des affectations…' : 'Aucune affectation trouvée.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

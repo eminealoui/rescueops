@@ -1,0 +1,66 @@
+<div class="eyebrow">Dispatching Intelligent · Module 3</div>
+<h1 class="page-title">Nouvelle <em>Affectation Manuelle (BF-08)</em></h1>
+<p class="page-sub">Créez une proposition d'affectation manuelle d'une ressource d'intervention à un incident avec un score initial.</p>
+
+<div class="conteneur-form">
+  <form class="card panneau" [formGroup]="form" (ngSubmit)="soumettre()" novalidate>
+    <div class="field">
+      <label for="incident">Identifiant de l'incident</label>
+      <div class="ligne">
+        <input
+          id="incident"
+          class="input mono"
+          formControlName="incidentId"
+          [class.invalid]="form.controls.incidentId.invalid && form.controls.incidentId.touched"
+          placeholder="ex: 123e4567-e89b-12d3-a456-426614174000" />
+        <button type="button" class="btn btn-outline petit" (click)="genererIncident()" title="Générer un UUID">Nouveau</button>
+      </div>
+      @if (form.controls.incidentId.invalid && form.controls.incidentId.touched) {
+        <span class="erreur-txt">UUID valide requis.</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="ressource">Identifiant de la ressource</label>
+      <div class="ligne">
+        <input
+          id="ressource"
+          class="input mono"
+          formControlName="ressourceId"
+          [class.invalid]="form.controls.ressourceId.invalid && form.controls.ressourceId.touched"
+          placeholder="ex: 987e6543-e21b-34d5-c678-426614174999" />
+        <button type="button" class="btn btn-outline petit" (click)="genererRessource()" title="Générer un UUID">Nouveau</button>
+      </div>
+      @if (form.controls.ressourceId.invalid && form.controls.ressourceId.touched) {
+        <span class="erreur-txt">UUID valide requis.</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="score">Score d'adéquation ({{ form.controls.score.value }} / 100)</label>
+      <div class="range-row">
+        <input
+          id="score"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          class="range-input"
+          formControlName="score" />
+        <input
+          type="number"
+          min="0"
+          max="100"
+          class="input input-score mono"
+          formControlName="score" />
+      </div>
+      <span class="aide">Indiquez la pertinence de l'affectation (0 = inadaptée, 100 = parfaite).</span>
+    </div>
+
+    <div class="pied-boutons">
+      <button type="submit" class="btn btn-primary" [disabled]="envoi()">
+        {{ envoi() ? 'Création en cours…' : 'Créer l’affectation proposée' }} <span class="arr">→</span>
+      </button>
+    </div>
+  </form>
+</div>

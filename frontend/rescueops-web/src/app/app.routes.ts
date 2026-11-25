@@ -38,6 +38,11 @@ export const routes: Routes = [
         loadChildren: () => import('./features/hospital/hospital.routes').then((m) => m.HOSPITAL_ROUTES),
       },
       {
+        path: 'dispatch',
+        canActivate: [roleGuard('OPERATEUR', 'ADMIN')],
+        loadChildren: () => import('./features/dispatch/dispatch.routes').then((m) => m.DISPATCH_ROUTES),
+      },
+      {
         path: 'modules/:code',
         title: 'Module · RescueOps',
         loadComponent: () => import('./features/modules/module-placeholder').then((m) => m.ModulePlaceholder),
