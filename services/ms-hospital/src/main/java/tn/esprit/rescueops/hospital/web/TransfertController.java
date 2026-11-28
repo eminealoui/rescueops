@@ -3,14 +3,18 @@ package tn.esprit.rescueops.hospital.web;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tn.esprit.rescueops.common.security.CurrentUser;
 import tn.esprit.rescueops.hospital.domain.StatutTransfert;
 import tn.esprit.rescueops.hospital.dto.CreerTransfertRequest;
 import tn.esprit.rescueops.hospital.dto.TransfertResponse;
+import tn.esprit.rescueops.hospital.service.FluxDirect;
 import tn.esprit.rescueops.hospital.service.FluxService;
 import tn.esprit.rescueops.hospital.service.TransfertService;
 
@@ -36,10 +40,12 @@ public class TransfertController {
 
     private final TransfertService service;
     private final FluxService flux;
+    private final FluxDirect fluxDirect;
 
-    public TransfertController(TransfertService service, FluxService flux) {
+    public TransfertController(TransfertService service, FluxService flux, FluxDirect fluxDirect) {
         this.service = service;
         this.flux = flux;
+        this.fluxDirect = fluxDirect;
     }
 
     /** Ticker « EN DIRECT » : réservé aux rôles opérationnels, sans données personnelles. */
@@ -47,6 +53,15 @@ public class TransfertController {
     @PreAuthorize(OPERATIONNEL)
     public List<FluxService.Evenement> feed(@RequestParam(required = false) Instant since) {
         return flux.derniers(since);
+    }
+
+    /** Ticker « EN DIRECT » en temps réel (Server-Sent Events) : mêmes données que /feed, poussées à chaque changement. */
+    @GetMapping(path = "/feed/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize(OPERATIONNEL)
+    public SseEmitter fluxDirect(HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("X-Accel-Buffering", "no"); // Nginx : ne pas mettre le flux en tampon
+        return fluxDirect.abonner();
     }
 
     @PostMapping

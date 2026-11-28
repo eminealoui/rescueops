@@ -84,6 +84,17 @@ class TransfertControllerTest extends ApiTestBase {
     }
 
     @Test
+    void fluxDirectRefuseAuxCitoyensEtOuvertAuxOperationnels() throws Exception {
+        org.mockito.BDDMockito.given(fluxDirect.abonner())
+                .willReturn(new org.springframework.web.servlet.mvc.method.annotation.SseEmitter());
+        mvc.perform(get("/api/transfers/feed/stream").with(as("CITOYEN"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/transfers/feed/stream").with(as("COORDINATEUR_HOSPITALIER")))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("X-Accel-Buffering", "no"));
+    }
+
+    @Test
     void tableauDeBordLisibleParTousLesAuthentifies() throws Exception {
         mvc.perform(get("/api/hospitals/capacities").with(as("CITOYEN"))).andExpect(status().isOk());
     }

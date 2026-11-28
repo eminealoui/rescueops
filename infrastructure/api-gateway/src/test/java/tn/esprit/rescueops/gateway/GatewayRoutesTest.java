@@ -27,6 +27,7 @@ class GatewayRoutesTest {
         assertThat(uriById).containsExactlyInAnyOrderEntriesOf(Map.ofEntries(
                 Map.entry("ms-user", "lb://ms-user"),
                 Map.entry("ms-hospital", "lb://ms-hospital"),
+                Map.entry("ms-hospital-flux-direct", "lb://ms-hospital"),
                 Map.entry("ms-emergency", "lb://ms-emergency"),
                 Map.entry("ms-resource", "lb://ms-resource"),
                 Map.entry("ms-dispatch", "lb://ms-dispatch"),
@@ -39,6 +40,16 @@ class GatewayRoutesTest {
                 Map.entry("docs-ms-dispatch", "lb://ms-dispatch"),
                 Map.entry("docs-ms-intervention", "lb://ms-intervention"),
                 Map.entry("docs-ms-training", "lb://ms-training")));
+    }
+
+    @Test
+    void leFluxDirectSseNAPasDeDelaiEtPasseAvantLaRouteHopital() {
+        List<Route> routes = routeLocator.getRoutes().collectList().block();
+        List<String> ids = routes.stream().map(Route::getId).toList();
+        Route flux = routes.stream().filter(r -> r.getId().equals("ms-hospital-flux-direct")).findFirst().orElseThrow();
+
+        assertThat(flux.getMetadata()).containsEntry("response-timeout", -1);
+        assertThat(ids.indexOf("ms-hospital-flux-direct")).isLessThan(ids.indexOf("ms-hospital"));
     }
 
     @Test
