@@ -1,0 +1,3 @@
+# Configuration propre à api-gateway (servie par le Config Server).
+info:
+  module: "Point d'entrée unique de l'API"

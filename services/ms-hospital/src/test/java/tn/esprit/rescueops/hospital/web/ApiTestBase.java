@@ -9,6 +9,7 @@ import tn.esprit.rescueops.hospital.event.MissionTermineeListener;
 import tn.esprit.rescueops.hospital.service.CompatibiliteService;
 import tn.esprit.rescueops.hospital.service.EtablissementService;
 import tn.esprit.rescueops.hospital.service.ExpirationJob;
+import tn.esprit.rescueops.hospital.service.FluxDirect;
 import tn.esprit.rescueops.hospital.service.FluxService;
 import tn.esprit.rescueops.hospital.service.TableauDeBordService;
 import tn.esprit.rescueops.hospital.service.TransfertService;
@@ -34,6 +35,9 @@ abstract class ApiTestBase {
 
     @MockitoBean
     protected FluxService flux;
+
+    @MockitoBean
+    protected FluxDirect fluxDirect;
 
     @MockitoBean
     protected ExpirationJob expirationJob;

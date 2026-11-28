@@ -10,6 +10,8 @@ server:
 spring:
   application:
     name: api-gateway
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
   cloud:
     gateway:
       server:
@@ -22,6 +24,14 @@ spring:
               uri: lb://ms-user
               predicates:
                 - Path=/api/users/**
+            # Bandeau EN DIRECT (Server-Sent Events) : connexion longue, sans le délai de 10 s.
+            # Déclarée AVANT ms-hospital : la première route qui correspond gagne.
+            - id: ms-hospital-flux-direct
+              uri: lb://ms-hospital
+              predicates:
+                - Path=/api/transfers/feed/stream
+              metadata:
+                response-timeout: -1
             - id: ms-hospital
               uri: lb://ms-hospital
               predicates:

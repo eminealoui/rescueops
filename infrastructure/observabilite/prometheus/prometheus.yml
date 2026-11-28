@@ -1,0 +1,66 @@
+# =====================================================================
+#  Prometheus RescueOps : les services sont découverts dynamiquement dans Eureka
+#  (aucune adresse codée en dur : une 2e instance est surveillée automatiquement).
+# =====================================================================
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+
+  # Ressources et uptime : métriques Micrometer de chaque instance (/actuator/prometheus)
+  - job_name: services
+    metrics_path: /actuator/prometheus
+    eureka_sd_configs:
+      - server: http://discovery-server:8761/eureka
+        refresh_interval: 15s
+    relabel_configs:
+      - source_labels: [__meta_eureka_app_name]
+        target_label: application
+        action: lowercase
+      - source_labels: [__meta_eureka_app_instance_id]
+        target_label: instance
+
+  # Heartbeat : le Blackbox exporter appelle /actuator/health de chaque instance (UP = 200)
+  - job_name: heartbeat
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    eureka_sd_configs:
+      - server: http://discovery-server:8761/eureka
+        refresh_interval: 15s
+    relabel_configs:
+      - source_labels: [__meta_eureka_app_name]
+        target_label: application
+        action: lowercase
+      - source_labels: [__meta_eureka_app_instance_id]
+        target_label: instance
+      - source_labels: [__address__]
+        target_label: __param_target
+        replacement: http://${1}/actuator/health
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  # Heartbeat des briques hors Eureka
+  - job_name: heartbeat-socle
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ["http://discovery-server:8761/actuator/health"]
+        labels: { application: discovery-server }
+      - targets: ["http://keycloak:9000/health/ready"]
+        labels: { application: keycloak }
+      - targets: ["http://lb/nginx-health"]
+        labels: { application: load-balancer }
+      - targets: ["http://web/"]
+        labels: { application: web }
+      - targets: ["http://rabbitmq:15672/"]
+        labels: { application: rabbitmq }
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__address__]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

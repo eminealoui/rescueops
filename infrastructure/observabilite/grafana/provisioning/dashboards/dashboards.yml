@@ -1,0 +1,9 @@
+# Tableaux de bord chargés depuis infrastructure/observabilite/grafana/dashboards.
+apiVersion: 1
+providers:
+  - name: rescueops
+    folder: RescueOps
+    type: file
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

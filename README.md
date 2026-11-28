@@ -10,25 +10,32 @@ Projet AWD (Architecture Web Distribuée), réalisé par une équipe de 6 :
 ## Architecture
 
 ```
-Navigateur ── Angular (4200) ──OIDC+PKCE──> Keycloak (8180, realm rescueops)
-                 │ Bearer JWT
-                 v
-           API Gateway (8080) ──> Eureka (8761)
+Navigateur ──HTTPS──> Nginx load balancer (8443 ; 8090 -> HTTPS)   rate limit, en-têtes de sécurité
+                 │  round-robin + bascule                   │
+       API Gateway 1 ── API Gateway 2  ──> Eureka (8761) <── Config Server (8888, config-repo/)
                  │ lb://<service>
    ms-user (8087) · ms-hospital (8085) · ms-emergency (8081) · ms-resource (8082)
    ms-dispatch (8083) · ms-intervention (8084) · ms-training (8086)
                  │                                    │
    MySQL (1 conteneur, 1 base + 1 compte par service)  RabbitMQ (exchange rescueops.events)
+
+Keycloak (8180) : OIDC + PKCE pour Angular, JWT vérifié par la Gateway et chaque service.
+Observabilité (profil "monitoring") : Loki + Alloy (logs), Prometheus + Blackbox (métriques, heartbeat),
+Zipkin (traces), Grafana (3000).
 ```
 
 | Composant | URL | Remarque |
 |---|---|---|
-| API Gateway | http://localhost:8080 | point d'entrée unique |
+| API Gateway (socle seul) | http://localhost:8080 | point d'entrée unique ; port réglable par `GATEWAY_HOST_PORT` |
 | Swagger (tous les services) | http://localhost:8080/swagger-ui.html | |
 | Eureka | http://localhost:8761 | services enregistrés |
 | Keycloak (console) | http://localhost:8180 | identifiants dans `.env` |
 | RabbitMQ (console) | http://localhost:15672 | identifiants dans `.env` |
 | MySQL | `localhost:3307` | **3307** côté machine, pour éviter le conflit avec un MySQL Windows sur 3306 |
+| Application (projet complet) | https://localhost:8443 | via le load balancer Nginx |
+| Config Server | http://localhost:8888/ms-hospital/default | configuration servie à un service |
+| Grafana | http://localhost:3000 | profil `monitoring` ; tableaux « Santé des services » et « Logs centralisés » |
+| Prometheus / Zipkin | http://localhost:9090 / http://localhost:9411 | profil `monitoring` |
 
 ## Prérequis
 - Java 21 (Temurin)
@@ -51,6 +58,16 @@ Cette commande démarre :
 - RabbitMQ ;
 - Eureka et l'API Gateway ;
 - **ms-user**, le service partagé des profils utilisateurs.
+
+## Lancer tout le projet dans Docker (démo)
+
+```bash
+docker compose up -d --build                      # socle + Config Server + 2 Gateways + 7 services + Angular + Nginx
+docker compose --profile monitoring up -d         # + Loki, Alloy, Prometheus, Blackbox, Zipkin, Grafana
+```
+
+Application : https://localhost:8443. Détails, HTTPS (mkcert) et ce qui change pour chaque membre : [docs/GUIDE-EQUIPE.md](docs/GUIDE-EQUIPE.md#-mise-à-jour-du-socle--ce-que-tu-dois-faire-5-minutes).
+Soutenance : [scénario de démo](docs/soutenance/DEMO.md) et [questions probables](docs/soutenance/QUESTIONS-ORAL.md).
 
 ## Développer son microservice (IntelliJ)
 

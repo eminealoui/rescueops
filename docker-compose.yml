@@ -1,0 +1,313 @@
+# =====================================================================
+#  RescueOps - PROJET COMPLET dans Docker (démo, soutenance)
+#
+#    cp .env.example .env            (une seule fois)
+#    docker compose up -d --build    (1er lancement : 5 à 10 min de compilation)
+#    -> application : https://localhost:8443   (http://localhost:8090 y redirige)
+#
+#  Ordre de démarrage garanti par les healthchecks :
+#    MySQL, RabbitMQ, Keycloak -> Eureka -> Config Server -> 2 Gateways + 7 microservices
+#    -> Angular -> load balancer Nginx
+#
+#  Le socle seul (pour développer un service dans IntelliJ) reste :
+#    docker compose -f docker-compose.infra.yml up -d
+#  Les deux fichiers partagent le même projet "rescueops" : lancer l'un OU l'autre.
+#  Les services du socle sont repris tels quels de docker-compose.infra.yml (extends).
+# =====================================================================
+name: rescueops
+
+# Réglages communs aux microservices métier
+x-java-service: &java-service
+  restart: on-failure
+  networks: [rescueops-net]
+
+x-java-env: &java-env
+  SPRING_PROFILES_ACTIVE: docker
+  CONFIG_SERVER_URL: http://config-server:8888
+  RABBITMQ_USER: ${RABBITMQ_USER}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+x-depends-metier: &depends-metier
+  mysql: { condition: service_healthy }
+  rabbitmq-init: { condition: service_completed_successfully }
+  keycloak: { condition: service_healthy }
+  config-server: { condition: service_healthy }
+
+services:
+
+  # ---------- Socle (identique à docker-compose.infra.yml) ----------
+  mysql:
+    extends: { file: docker-compose.infra.yml, service: mysql }
+
+  keycloak:
+    extends: { file: docker-compose.infra.yml, service: keycloak }
+
+  rabbitmq:
+    extends: { file: docker-compose.infra.yml, service: rabbitmq }
+
+  rabbitmq-init:
+    extends: { file: docker-compose.infra.yml, service: rabbitmq-init }
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+
+  discovery-server:
+    extends: { file: docker-compose.infra.yml, service: discovery-server }
+
+  # ---------- Configuration centralisée ----------
+  config-server:
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: infrastructure/config-server, PORT: "8888" }
+    image: rescueops/config-server:dev
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka/
+      CONFIG_REPO: file:/config-repo/
+    volumes:
+      - ./config-repo:/config-repo:ro
+    ports: ["127.0.0.1:8888:8888"]
+    depends_on:
+      discovery-server: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  # ---------- Point d'entrée de l'API : 2 Gateways derrière le load balancer Nginx ----------
+  api-gateway-1: &gateway
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: infrastructure/api-gateway, PORT: "8080" }
+    image: rescueops/api-gateway:dev
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      CONFIG_SERVER_URL: http://config-server:8888
+      ZIPKIN_URL: http://zipkin:9411
+      ZIPKIN_ENABLED: ${ZIPKIN_ENABLED:-false}
+    depends_on:
+      discovery-server: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+      config-server: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  api-gateway-2:
+    <<: *gateway
+
+  # Load balancer : seul point d'entrée publié (round-robin + bascule entre les Gateways, HTTPS)
+  lb:
+    build:
+      context: infrastructure/nginx
+    image: rescueops/lb:dev
+    ports:
+      - "127.0.0.1:${GATEWAY_HOST_PORT:-8090}:80"
+      - "127.0.0.1:8443:443"
+    volumes:
+      # Certificat HTTPS : créé au 1er démarrage (auto-signé) ou fourni par mkcert. Ignoré par Git.
+      - ./infrastructure/nginx/certs:/etc/nginx/certs
+    depends_on:
+      api-gateway-1: { condition: service_healthy }
+      api-gateway-2: { condition: service_healthy }
+      web: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  # ---------- Microservices métier (aucun port publié : accès par la Gateway) ----------
+  ms-user:
+    <<: *java-service
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: services/ms-user, PORT: "8087" }
+    image: rescueops/ms-user:dev
+    environment:
+      <<: *java-env
+      DB_PASSWORD: ${USER_DB_PASSWORD}
+      KEYCLOAK_MS_USER_SECRET: ${KEYCLOAK_MS_USER_SECRET:-dev_ms_user_admin}
+      ZIPKIN_URL: http://zipkin:9411
+      ZIPKIN_ENABLED: ${ZIPKIN_ENABLED:-false}
+    depends_on: *depends-metier
+
+  ms-emergency:
+    <<: *java-service
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: services/ms-emergency, PORT: "8081" }
+    image: rescueops/ms-emergency:dev
+    environment:
+      <<: *java-env
+      DB_PASSWORD: ${EMERGENCY_DB_PASSWORD}
+    depends_on: *depends-metier
+
+  ms-resource:
+    <<: *java-service
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: services/ms-resource, PORT: "8082" }
+    image: rescueops/ms-resource:dev
+    environment:
+      <<: *java-env
+      DB_PASSWORD: ${RESOURCE_DB_PASSWORD}
+    depends_on: *depends-metier
+
+  ms-dispatch:
+    <<: *java-service
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: services/ms-dispatch, PORT: "8083" }
+    image: rescueops/ms-dispatch:dev
+    environment:
+      <<: *java-env
+      DB_PASSWORD: ${DISPATCH_DB_PASSWORD}
+    depends_on: *depends-metier
+
+  ms-intervention:
+    <<: *java-service
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: services/ms-intervention, PORT: "8084" }
+    image: rescueops/ms-intervention:dev
+    environment:
+      <<: *java-env
+      DB_PASSWORD: ${INTERVENTION_DB_PASSWORD}
+    depends_on: *depends-metier
+
+  ms-hospital:
+    <<: *java-service
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: services/ms-hospital, PORT: "8085" }
+    image: rescueops/ms-hospital:dev
+    environment:
+      <<: *java-env
+      SPRING_PROFILES_ACTIVE: docker,demo
+      DB_PASSWORD: ${HOSPITAL_DB_PASSWORD}
+      ZIPKIN_URL: http://zipkin:9411
+      ZIPKIN_ENABLED: ${ZIPKIN_ENABLED:-false}
+    depends_on: *depends-metier
+
+  ms-training:
+    <<: *java-service
+    build:
+      context: .
+      dockerfile: docker/java-service.Dockerfile
+      args: { MODULE: services/ms-training, PORT: "8086" }
+    image: rescueops/ms-training:dev
+    environment:
+      <<: *java-env
+      DB_PASSWORD: ${TRAINING_DB_PASSWORD}
+    depends_on: *depends-metier
+
+  # ---------- Application Angular (Nginx) ----------
+  web:
+    build:
+      context: frontend/rescueops-web
+    image: rescueops/web:dev
+    # Pas de port publié : servie par le load balancer (https://localhost:8443).
+    networks: [rescueops-net]
+
+  # =====================================================================
+  #  Observabilité (profil optionnel "monitoring", gourmand en mémoire) :
+  #    docker compose --profile monitoring up -d
+  #    -> Grafana : http://localhost:3000  (tableaux "Santé des services" et "Logs centralisés")
+  #  Traces Zipkin (api-gateway, ms-user, ms-hospital), désactivées par défaut :
+  #    $env:ZIPKIN_ENABLED="true"; docker compose --profile monitoring up -d
+  #    -> Zipkin : http://localhost:9411
+  # =====================================================================
+
+  # Stockage des logs
+  loki:
+    profiles: [monitoring]
+    image: grafana/loki:3.5.3
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    volumes:
+      - ./infrastructure/observabilite/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    networks: [rescueops-net]
+
+  # Collecte : lit les logs de tous les conteneurs RescueOps via Docker (successeur de Promtail)
+  alloy:
+    profiles: [monitoring]
+    image: grafana/alloy:v1.10.0
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./infrastructure/observabilite/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      loki: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  # Visualisation et recherche
+  grafana:
+    profiles: [monitoring]
+    image: grafana/grafana:12.1.0
+    environment:
+      # Aucun mot de passe dans le dépôt : admin / admin au 1er démarrage,
+      # Grafana impose alors d'en choisir un nouveau (gardé dans le volume grafana-data).
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/rescueops-sante.json
+    ports: ["127.0.0.1:3000:3000"]
+    volumes:
+      - ./infrastructure/observabilite/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/observabilite/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      loki: { condition: service_healthy }
+      prometheus: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  # Métriques : uptime, CPU, mémoire, requêtes (services découverts dans Eureka)
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./infrastructure/observabilite/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports: ["127.0.0.1:9090:9090"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9090/-/ready || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      discovery-server: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  # Heartbeat : sonde HTTP sur /actuator/health de chaque service
+  blackbox:
+    profiles: [monitoring]
+    image: prom/blackbox-exporter:v0.27.0
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    volumes:
+      - ./infrastructure/observabilite/blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    networks: [rescueops-net]
+
+  # Traces distribuées (parcours d'une requête Gateway -> ms-hospital -> ms-user)
+  zipkin:
+    profiles: [monitoring]
+    image: openzipkin/zipkin:3.5.1
+    ports: ["127.0.0.1:9411:9411"]
+    networks: [rescueops-net]
+
+volumes:
+  mysql-data:
+  loki-data:
+  grafana-data:
+  prometheus-data:
+  keycloak-data:
+  rabbitmq-data:
+
+networks:
+  rescueops-net:
+    name: rescueops-net

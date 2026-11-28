@@ -1,0 +1,9 @@
+# Blackbox exporter : sonde HTTP utilisée pour le heartbeat (réponse 2xx en moins de 5 s = UP).
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: []   # 2xx
+      preferred_ip_protocol: ip4
