@@ -17,6 +17,11 @@
     <description>RescueOps - MS7 Utilisateurs : profils métier liés à Keycloak (port 8087)</description>
 
     <dependencies>
+        <dependency>
+            <!-- Traces distribuées vers Zipkin (désactivées par défaut, voir config-repo) -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-zipkin</artifactId>
+        </dependency>
         <!-- Socle commun : sécurité JWT Keycloak, erreurs ProblemDetail, corrélation, événements -->
         <dependency>
             <groupId>tn.esprit.rescueops</groupId>

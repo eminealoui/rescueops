@@ -43,7 +43,7 @@ public class GatewaySecurityConfig {
                 })
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .pathMatchers("/actuator/health/**", "/actuator/health", "/actuator/info",
+                        .pathMatchers("/actuator/health/**", "/actuator/health", "/actuator/info", "/actuator/prometheus",
                                 "/docs/*/v3/api-docs", "/docs/*/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**")
                         .permitAll()
                         .anyExchange().authenticated())

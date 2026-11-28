@@ -49,6 +49,12 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
+        <!-- Métriques au format Prometheus (/actuator/prometheus) : uptime, CPU, mémoire JVM, requêtes HTTP -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <!-- Optionnelles : activées seulement si le service les déclare lui-même -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

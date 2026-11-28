@@ -10,11 +10,37 @@ eureka:
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
+# Monitoring : /actuator/prometheus est lu par Prometheus (uptime, CPU, mémoire, requêtes HTTP).
 # /actuator/info affiche la provenance de la configuration (preuve pour la démo).
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
   info:
     env:
       enabled: true
+  # Traces Zipkin (seuls api-gateway, ms-user et ms-hospital ont la dépendance).
+  # Désactivées par défaut : ZIPKIN_ENABLED=true pour les envoyer.
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      enabled: ${ZIPKIN_ENABLED:false}
+      zipkin:
+        endpoint: ${ZIPKIN_URL:http://localhost:9411}/api/v2/spans
+
+# Chemins accessibles sans jeton dans les services (remplace la liste par défaut de rescueops-common).
+# /actuator/prometheus : les ports des services ne sont jamais publiés hors de la machine.
+rescueops:
+  security:
+    public-paths:
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/prometheus
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
 
 info:
   projet: RescueOps

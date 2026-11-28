@@ -80,6 +80,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       CONFIG_SERVER_URL: http://config-server:8888
+      ZIPKIN_URL: http://zipkin:9411
+      ZIPKIN_ENABLED: ${ZIPKIN_ENABLED:-false}
     depends_on:
       discovery-server: { condition: service_healthy }
       keycloak: { condition: service_healthy }
@@ -118,6 +120,8 @@ services:
       <<: *java-env
       DB_PASSWORD: ${USER_DB_PASSWORD}
       KEYCLOAK_MS_USER_SECRET: ${KEYCLOAK_MS_USER_SECRET:-dev_ms_user_admin}
+      ZIPKIN_URL: http://zipkin:9411
+      ZIPKIN_ENABLED: ${ZIPKIN_ENABLED:-false}
     depends_on: *depends-metier
 
   ms-emergency:
@@ -179,6 +183,8 @@ services:
       <<: *java-env
       SPRING_PROFILES_ACTIVE: docker,demo
       DB_PASSWORD: ${HOSPITAL_DB_PASSWORD}
+      ZIPKIN_URL: http://zipkin:9411
+      ZIPKIN_ENABLED: ${ZIPKIN_ENABLED:-false}
     depends_on: *depends-metier
 
   ms-training:
@@ -204,7 +210,10 @@ services:
   # =====================================================================
   #  Observabilité (profil optionnel "monitoring", gourmand en mémoire) :
   #    docker compose --profile monitoring up -d
-  #    -> Grafana : http://localhost:3000  (tableau de bord "RescueOps - Logs centralisés")
+  #    -> Grafana : http://localhost:3000  (tableaux "Santé des services" et "Logs centralisés")
+  #  Traces Zipkin (api-gateway, ms-user, ms-hospital), désactivées par défaut :
+  #    $env:ZIPKIN_ENABLED="true"; docker compose --profile monitoring up -d
+  #    -> Zipkin : http://localhost:9411
   # =====================================================================
 
   # Stockage des logs
@@ -244,7 +253,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-dev_grafana}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/rescueops-logs.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/rescueops-sante.json
     ports: ["127.0.0.1:3000:3000"]
     volumes:
       - ./infrastructure/observabilite/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -252,12 +261,50 @@ services:
       - grafana-data:/var/lib/grafana
     depends_on:
       loki: { condition: service_healthy }
+      prometheus: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  # Métriques : uptime, CPU, mémoire, requêtes (services découverts dans Eureka)
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./infrastructure/observabilite/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports: ["127.0.0.1:9090:9090"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9090/-/ready || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      discovery-server: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  # Heartbeat : sonde HTTP sur /actuator/health de chaque service
+  blackbox:
+    profiles: [monitoring]
+    image: prom/blackbox-exporter:v0.27.0
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    volumes:
+      - ./infrastructure/observabilite/blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    networks: [rescueops-net]
+
+  # Traces distribuées (parcours d'une requête Gateway -> ms-hospital -> ms-user)
+  zipkin:
+    profiles: [monitoring]
+    image: openzipkin/zipkin:3.5.1
+    ports: ["127.0.0.1:9411:9411"]
     networks: [rescueops-net]
 
 volumes:
   mysql-data:
   loki-data:
   grafana-data:
+  prometheus-data:
   keycloak-data:
   rabbitmq-data:
 
