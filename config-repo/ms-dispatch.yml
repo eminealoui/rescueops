@@ -1,0 +1,3 @@
+# Configuration propre à ms-dispatch (servie par le Config Server).
+info:
+  module: "Module 3 - Dispatching intelligent"

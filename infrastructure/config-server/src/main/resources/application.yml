@@ -1,0 +1,38 @@
+# =====================================================================
+#  Config Server RescueOps - port 8888
+#  Mode "native" : les fichiers sont lus dans le dossier config-repo/ du dépôt
+#  (pas de dépôt Git séparé). Un service lit sa config sur :
+#    http://localhost:8888/{nom-du-service}/{profil}
+# =====================================================================
+server:
+  port: ${SERVER_PORT:8888}
+
+spring:
+  application:
+    name: config-server
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          # Lancé depuis la racine du dépôt (java -jar) ou depuis ce module (mvnw spring-boot:run).
+          # Dans Docker, CONFIG_REPO=file:/config-repo/ (dossier monté en lecture seule).
+          search-locations: ${CONFIG_REPO:file:./config-repo/,file:../../config-repo/}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

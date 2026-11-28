@@ -1,0 +1,22 @@
+# =====================================================================
+#  Configuration COMMUNE à tous les services (servie par le Config Server).
+#  Aucun secret ici.
+# =====================================================================
+
+# Heartbeat Eureka : chaque service envoie un battement toutes les 10 s ;
+# sans battement pendant 30 s, Eureka le retire du registre (et la Gateway n'y route plus).
+eureka:
+  instance:
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+# /actuator/info affiche la provenance de la configuration (preuve pour la démo).
+management:
+  info:
+    env:
+      enabled: true
+
+info:
+  projet: RescueOps
+  config:
+    source: config-server

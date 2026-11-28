@@ -1,0 +1,10 @@
+# Configuration propre à ms-hospital (servie par le Config Server).
+# Les règles métier sont réglables ici sans recompiler le service.
+info:
+  module: "Module 5 - Coordination hospitalière"
+
+rescueops:
+  hospital:
+    reservation-ttl: 15m          # durée d'une place retenue avant expiration automatique
+    expiry-check-interval: 30s    # fréquence de la tâche d'expiration
+    max-radius-km: 50             # rayon de recherche des établissements compatibles

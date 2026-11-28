@@ -1,0 +1,3 @@
+# Configuration propre à ms-intervention (servie par le Config Server).
+info:
+  module: "Module 4 - Gestion des interventions"

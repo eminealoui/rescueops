@@ -39,6 +39,16 @@
             <artifactId>spring-tx</artifactId>
         </dependency>
 
+        <!--
+            Client du Config Server : chaque service lit sa config sur http://localhost:8888
+            grâce à la ligne "optional:configserver:" de son application.yml.
+            "optional" = le service démarre quand même si le Config Server est arrêté.
+        -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+
         <!-- Optionnelles : activées seulement si le service les déclare lui-même -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
