@@ -1,6 +1,6 @@
 # Relais /api/** vers les Gateways (inclus par les deux blocs server).
 
-# Rate limit (zones dans rescueops-ratelimit.conf) ; réponse 429 en JSON.
+# Rate limit (zones dans 00-rescueops-http.conf) ; réponse 429 en JSON.
 limit_req  zone=api_par_ip burst=40 nodelay;
 limit_conn connexions_par_ip 50;
 error_page 429 = @trop_de_requetes;
@@ -12,6 +12,7 @@ proxy_set_header Host $host;
 proxy_set_header X-Real-IP $remote_addr;
 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Correlation-Id $correlation_id;
 
 # Bascule : erreur réseau, délai dépassé ou Gateway indisponible -> essai sur l'autre.
 # Les POST/PUT ne sont jamais rejoués (pas de double création).

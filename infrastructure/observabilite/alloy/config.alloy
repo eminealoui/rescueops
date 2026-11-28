@@ -1,0 +1,56 @@
+// =====================================================================
+//  Grafana Alloy (successeur de Promtail) : lit les logs de tous les conteneurs
+//  du projet "rescueops" via Docker et les envoie à Loki.
+//  Aucun microservice n'est modifié : ils continuent d'écrire sur la console.
+// =====================================================================
+
+// 1. Trouver les conteneurs
+discovery.docker "conteneurs" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// 2. Ne garder que ceux de RescueOps et poser des étiquettes lisibles
+discovery.relabel "rescueops" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    regex         = "rescueops"
+    action        = "keep"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+// 3. Lire leurs logs
+loki.source.docker "conteneurs" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.conteneurs.targets
+  relabel_rules = discovery.relabel.rescueops.rules
+  forward_to    = [loki.process.niveaux.receiver]
+}
+
+// 4. Extraire le niveau (INFO, WARN, ERROR...) des logs Spring et Keycloak
+loki.process "niveaux" {
+  stage.regex {
+    expression = `(?P<level>TRACE|DEBUG|INFO|WARN|ERROR)\s`
+  }
+  stage.labels {
+    values = { level = "" }
+  }
+  forward_to = [loki.write.loki.receiver]
+}
+
+// 5. Envoyer à Loki
+loki.write "loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
