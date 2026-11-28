@@ -147,7 +147,7 @@ docker compose up -d --build
 - Application : **https://localhost:8443** (http://localhost:8090 y redirige)
 - Premier lancement : 5 à 10 minutes (compilation). Avec une connexion lente, construis les images une par une : `docker compose build ms-xxx`.
 - Le navigateur peut afficher « connexion non privée » : c'est le certificat auto-signé de développement. Clique sur *Paramètres avancés → Continuer*. Pour supprimer l'alerte (facultatif, gratuit) : installe [mkcert](https://github.com/FiloSottile/mkcert), puis `mkcert -install` et `mkcert -cert-file infrastructure/nginx/certs/localhost.pem -key-file infrastructure/nginx/certs/localhost-key.pem localhost 127.0.0.1`, puis `docker compose restart lb`.
-- Monitoring (gourmand en mémoire) : `docker compose --profile monitoring up -d`, puis **http://localhost:3000** (utilisateur `admin`, mot de passe `GRAFANA_ADMIN_PASSWORD` du `.env`, `dev_grafana` par défaut).
+- Monitoring (gourmand en mémoire) : `docker compose --profile monitoring up -d`, puis **http://localhost:3000** (1re connexion : `admin` / `admin`, Grafana demande aussitôt un nouveau mot de passe).
 - Pas les deux en même temps : `docker compose down` avant de revenir au socle seul.
 
 ### 5. Bon à savoir

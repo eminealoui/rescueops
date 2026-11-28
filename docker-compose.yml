@@ -249,8 +249,8 @@ services:
     profiles: [monitoring]
     image: grafana/grafana:12.1.0
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-dev_grafana}
+      # Aucun mot de passe dans le dépôt : admin / admin au 1er démarrage,
+      # Grafana impose alors d'en choisir un nouveau (gardé dans le volume grafana-data).
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/rescueops-sante.json
