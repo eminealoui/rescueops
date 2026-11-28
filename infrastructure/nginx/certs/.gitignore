@@ -1,0 +1,3 @@
+# Certificats HTTPS locaux : jamais dans Git (clé privée).
+*
+!.gitignore

@@ -3,10 +3,11 @@
 #
 #    cp .env.example .env            (une seule fois)
 #    docker compose up -d --build    (1er lancement : 5 à 10 min de compilation)
-#    -> application : http://localhost:4200
+#    -> application : https://localhost:8443   (http://localhost:8090 y redirige)
 #
 #  Ordre de démarrage garanti par les healthchecks :
-#    MySQL, RabbitMQ, Keycloak -> Eureka -> Config Server -> Gateway + 7 microservices -> Angular
+#    MySQL, RabbitMQ, Keycloak -> Eureka -> Config Server -> 2 Gateways + 7 microservices
+#    -> Angular -> load balancer Nginx
 #
 #  Le socle seul (pour développer un service dans IntelliJ) reste :
 #    docker compose -f docker-compose.infra.yml up -d
@@ -69,8 +70,8 @@ services:
       discovery-server: { condition: service_healthy }
     networks: [rescueops-net]
 
-  # ---------- Point d'entrée de l'API ----------
-  api-gateway:
+  # ---------- Point d'entrée de l'API : 2 Gateways derrière le load balancer Nginx ----------
+  api-gateway-1: &gateway
     build:
       context: .
       dockerfile: docker/java-service.Dockerfile
@@ -79,11 +80,30 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       CONFIG_SERVER_URL: http://config-server:8888
-    ports: ["127.0.0.1:${GATEWAY_HOST_PORT:-8080}:8080"]
     depends_on:
       discovery-server: { condition: service_healthy }
       keycloak: { condition: service_healthy }
       config-server: { condition: service_healthy }
+    networks: [rescueops-net]
+
+  api-gateway-2:
+    <<: *gateway
+
+  # Load balancer : seul point d'entrée publié (round-robin + bascule entre les Gateways, HTTPS)
+  lb:
+    build:
+      context: infrastructure/nginx
+    image: rescueops/lb:dev
+    ports:
+      - "127.0.0.1:${GATEWAY_HOST_PORT:-8090}:80"
+      - "127.0.0.1:8443:443"
+    volumes:
+      # Certificat HTTPS : créé au 1er démarrage (auto-signé) ou fourni par mkcert. Ignoré par Git.
+      - ./infrastructure/nginx/certs:/etc/nginx/certs
+    depends_on:
+      api-gateway-1: { condition: service_healthy }
+      api-gateway-2: { condition: service_healthy }
+      web: { condition: service_healthy }
     networks: [rescueops-net]
 
   # ---------- Microservices métier (aucun port publié : accès par la Gateway) ----------
@@ -178,10 +198,7 @@ services:
     build:
       context: frontend/rescueops-web
     image: rescueops/web:dev
-    # 4200 : même adresse qu'avec ng serve, déjà autorisée comme redirection dans Keycloak.
-    ports: ["127.0.0.1:4200:80"]
-    depends_on:
-      api-gateway: { condition: service_healthy }
+    # Pas de port publié : servie par le load balancer (https://localhost:8443).
     networks: [rescueops-net]
 
 volumes:
